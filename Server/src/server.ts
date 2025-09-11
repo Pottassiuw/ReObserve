@@ -1,5 +1,15 @@
-function a(n:number) {
-    return n*2
-}
+import express, {Express, Request, Response} from "express";
+import dotenv from 'dotenv'
 
-console.log(a(4))
+dotenv.config({ path: '.env' })
+
+const port = process.env.PORT || 8000;
+const app:Express= express();
+
+app.get("/", (req:Request, res:Response) => {
+    res.send("EU SOU FELIZ!");
+});
+
+app.listen(port, () => {
+    console.log(`Listening on port ${process.env.PORT}`)
+});
