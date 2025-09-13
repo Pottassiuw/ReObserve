@@ -21,38 +21,82 @@ model Usuario {
   senha    String
   cpf String @unique
   nome String
+  admin Boolean @default(false) 
+  dataCriacao DateTime @default(now())
+
+  empresa Empresa @relation(fields: [empresaId], references: [id])
+  empresaId Int
+
+  lancamento Lancamento[]
 }
 
 model Empresa {
   id           Int    @id @default(autoincrement())
   cnpj         String
-  nome_fantasia String?
-  razão_social String
+  nomeFantasia String?
+  razaoSocial String
   endereco String
-  situacao_cadastral String
-  natureza_juridica String
-  CNAEs String
+  situacaoCadastral String
+  naturezaJuridica String
+  CNAES String
+  dataCriacao DateTime @default(now())
+
+  usuarios Usuario[]
 }
 
 model Lancamento {
   id Int @id @default(autoincrement())
+  data_lancamento DateTime 
+  latitude Float
+  longitude Float
+
+  dataCriacao DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+
+  /* Relacão de Um 1-n entre Lançamento e Períodos */
+  periodo Periodo @relation(fields:[periodoId], references: [id])
+  periodoId Int
+
+  /* Um lançamento tem várias imagens e taz consigo, o usuário e suas informações*/
+  imagens Imagem[]
+  usuarios Usuario[]
+  notaFiscal NotaFiscal?
+
 }
 
 model NotaFiscal {
   id          Int     @id @default(autoincrement())
   nome_emitente String
-  cnpj        String? 
-  cpf         String? 
-  numero_nota String
+  cnpj        String?
+  cpf         String?
+  numero_nota String @unique
   valor       Float?
-  chave_acesso Int?
+  chaveAcesso Int?
   descricao String
-  data_emissao DateTime
-  data_criacao DateTime @updatedAt
+  dataEmissao DateTime
+  dataCriacao DateTime @default(now())
+
+  /* Relacão de 1-n entre Lancamento e Períodos */
+  lancamento Lancamento @relation(fields: [lancamentoId], references: [id])
+  lancamentoId Int @unique
 }
 
 model Imagem {
   id           Int      @id @default(autoincrement())
   url          String
-  data_criacao DateTime @updatedAt
+  dataCriacao DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+
+  /* Relação de 1-n entre Lancamentos e Imagens*/
+  lancamento Lancamento @relation(fields: [lancamentoId], references: [id])
+  lancamentoId Int
+}
+
+model Periodo {
+  id           Int @id @default(autoincrement())
+  dataInicio  DateTime @default(now())
+  dataFim     DateTime
+  fechado      Boolean @default(false)
+
+  lancamento Lancamento[]
 }
