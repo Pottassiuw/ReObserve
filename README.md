@@ -3,7 +3,7 @@
 > Este projeto tem como finalidade criar e organizar a emissão de NFs (Notas fiscais) para melhor controle às empresas.
 
 ## 🚀 Status do Projeto
-**Em desenvolvimento** - Backend implementado | Frontend planejado com React.js
+**Em desenvolvimento** - Backend implementado | Frontend planejado com React.js e ShadCn para UI.
 
 ---
 
@@ -70,7 +70,7 @@ PostgreSQL >= X.X
 ### Instalação
 ```bash
 # 1. Clone o repositório
-git clone [SEU_REPO_URL]
+git clone https://github.com/Pottassiuw/ReObserve
 
 # 2. Instale as dependências
 npm install
@@ -83,7 +83,7 @@ cp .env.example .env
 npx prisma migrate dev
 
 # 5. Inicie o servidor
-npm run dev
+npm run start
 ```
 
 ---
@@ -143,7 +143,7 @@ POST /api/usuarios/register
 
 ## 👨‍💻 Desenvolvedor
 
-**[SEU NOME]**
-- GitHub: [@seu-usuario](https://github.com/seu-usuario)
-- LinkedIn: [Seu perfil](https://linkedin.com/in/seu-perfil)
-- Email: seu.email@exemplo.com
+**[Thiago Nascimento]**
+- GitHub: [@Pottassiuw](https://github.com/Pottassiuw)
+- LinkedIn: [Thiago Nascimento](www.linkedin.com/in/thiago-nascimento-729077292)
+- Email: pottassiu@proton.me
