@@ -1,10 +1,12 @@
 import express from "express";
-import empresaRoutes from "./Routes/enterpriseRoute";
+import userAuth from "./Routes/auth/userRoutes";
+import enterpriseRoute from "./Routes/auth/enterpriseRoute";
 
 const app = express();
 app.use(express.json());
 
 // rotas
-app.use("/empresas", empresaRoutes);
+app.use("/users", userAuth);
+app.use("/enterprises", enterpriseRoute);
 
-export default app;
+export default app

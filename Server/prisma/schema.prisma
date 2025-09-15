@@ -34,6 +34,7 @@ model Empresa {
   id           Int    @id @default(autoincrement())
   cnpj         String
   nomeFantasia String?
+  senha String
   razaoSocial String
   endereco String
   situacaoCadastral String
