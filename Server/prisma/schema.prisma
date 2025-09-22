@@ -32,7 +32,7 @@ model Usuario {
 
 model Empresa {
   id           Int    @id @default(autoincrement())
-  cnpj         String
+  cnpj         String @unique
   nomeFantasia String?
   senha String
   razaoSocial String

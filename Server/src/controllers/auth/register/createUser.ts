@@ -38,7 +38,7 @@ export const criarUsuario = async (req: Request, res: Response) => {
 	const user = await prisma.usuario.create({
 	    data: { 
 		nome: validatedUserData.nome,
-		senha: validatedUserData.senha,
+		senha: hashedUserPassword,
 		email: validatedUserData.email,
 		cpf: validatedUserData.cpf,
 		empresaId: req.body.empresaId
