@@ -3,8 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deletarUsuario = exports.deletarTodosUsuarios = exports.retornarUsuarioId = exports.retornarUsuarios = void 0;
-const prisma_1 = __importDefault(require("../prisma/prisma"));
+exports.atualizarDados = exports.deletarUsuario = exports.retornarUsuarioId = exports.retornarUsuarios = void 0;
+const prisma_1 = __importDefault(require("../Prisma/prisma"));
 const retornarUsuarios = async (req, res) => {
     try {
         const user = await prisma_1.default.usuario.findMany();
@@ -38,7 +38,7 @@ const retornarUsuarioId = async (req, res) => {
         if (!idParam) {
             return res.status(400).json({
                 error: "ID não fornecido",
-                success: false
+                success: false,
             });
         }
         const id = parseInt(idParam);
@@ -46,25 +46,25 @@ const retornarUsuarioId = async (req, res) => {
             return res.status(400).json({
                 error: "ID deve ser um número",
                 success: false,
-                receivedId: idParam
+                receivedId: idParam,
             });
         }
         console.log("Buscando Usuário com ID:", id);
         // Versão mais simples da query
         const usuario = await prisma_1.default.usuario.findFirst({
-            where: { id: id }
+            where: { id: id },
         });
         if (!usuario) {
             return res.status(404).json({
-                error: "Empresa não encontrada",
+                error: "Usuário não encontrado",
                 success: false,
-                searchedId: id
+                searchedId: id,
             });
         }
         return res.status(200).json({
-            message: "Empresa encontrada!",
+            message: "Usuário encontrado!",
             success: true,
-            usuario
+            usuario,
         });
     }
     catch (error) {
@@ -74,39 +74,18 @@ const retornarUsuarioId = async (req, res) => {
         return res.status(500).json({
             error: "Erro interno do servidor",
             success: false,
-            errorType: error.constructor.name
+            errorType: error.constructor.name,
         });
     }
 };
 exports.retornarUsuarioId = retornarUsuarioId;
-const deletarTodosUsuarios = async (res) => {
-    try {
-        await prisma_1.default.usuario.deleteMany();
-        return res.status(200).json({
-            success: true,
-            message: "TODOS Usuários deletados!",
-            code: "USERS_DELETED"
-        });
-    }
-    catch (error) {
-        console.error("Tipo do erro:", error.constructor.name);
-        console.error("Mensagem:", error.message);
-        console.error("Stack:", error.stack);
-        return res.status(500).json({
-            error: "Erro interno do servidor",
-            success: false,
-            errorType: error.constructor.name
-        });
-    }
-};
-exports.deletarTodosUsuarios = deletarTodosUsuarios;
-const deletarUsuario = async (res, req) => {
+const deletarUsuario = async (req, res) => {
     try {
         const idParam = req.params.id;
         if (!idParam) {
             return res.status(400).json({
                 error: "ID não fornecido",
-                success: false
+                success: false,
             });
         }
         const id = parseInt(idParam);
@@ -114,15 +93,22 @@ const deletarUsuario = async (res, req) => {
             return res.status(400).json({
                 error: "ID deve ser um número",
                 success: false,
-                receivedId: idParam
+                receivedId: idParam,
             });
         }
-        console.log(id);
+        const usuarios = await prisma_1.default.usuario.findUnique({ where: { id } });
+        if (!usuarios) {
+            return res.status(404).json({
+                error: "Usuário não existe",
+                success: false,
+                searchedId: id,
+            });
+        }
         await prisma_1.default.usuario.delete({ where: { id: id } });
         return res.status(200).json({
             success: true,
             code: "USER_DELETED",
-            message: "Usuário deletado com sucesso!"
+            message: "Usuário deletado com sucesso!",
         });
     }
     catch (error) {
@@ -132,8 +118,41 @@ const deletarUsuario = async (res, req) => {
         return res.status(500).json({
             error: "Erro interno do servidor",
             success: false,
-            errorType: error.constructor.name
+            errorType: error.constructor.name,
         });
     }
 };
 exports.deletarUsuario = deletarUsuario;
+const atualizarDados = async (req, res) => {
+    try {
+        const { email, senha, nome } = req.body;
+        const idParam = req.params.id;
+        if (!idParam) {
+            return res.status(400).json({
+                error: "ID não fornecido",
+                success: false,
+            });
+        }
+        const id = parseInt(idParam);
+        if (isNaN(id)) {
+            return res.status(400).json({
+                error: "ID deve ser um número",
+                success: false,
+                receivedId: idParam,
+            });
+        }
+        const novosDados = prisma_1.default.usuario.update({
+            where: { id: id },
+            data: { nome, email, senha },
+            select: {
+                id: true,
+                nome: true,
+                email: true,
+            }
+        });
+    }
+    catch (error) {
+        console.error("Error in server:", error);
+    }
+};
+exports.atualizarDados = atualizarDados;

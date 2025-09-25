@@ -3,35 +3,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.atualizarUsuarioSchema = exports.criarUsuario = void 0;
-const prisma_1 = __importDefault(require("../../../prisma/prisma"));
+exports.criarUsuario = void 0;
+const prisma_1 = __importDefault(require("../../../Prisma/prisma"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const zod_1 = require("zod");
+const userSchemas_1 = require("../../../Schemas/userSchemas");
 //schema Zod para validação de dados
-const criarUsuarioSchema = zod_1.z.object({
-    nome: zod_1.z.string().min(1).max(48),
-    cpf: zod_1.z.string().refine((cpf) => {
-        if (typeof cpf !== "string")
-            return false;
-        cpf = cpf.replace(/[^\d]+/g, "");
-        if (cpf.length !== 11 || !!cpf.match(/(\d)\1{10}/))
-            return false;
-        const cpfDigits = cpf.split("").map((el) => +el);
-        const rest = (count) => {
-            return (((cpfDigits.slice(0, count - 12).reduce((soma, el, index) => soma + el * (count - index), 0) * 10) % 11) % 10);
-        };
-        return rest(10) === cpfDigits[9] && rest(11) === cpfDigits[10];
-    }, "Digite um cpf válido."),
-    senha: zod_1.z
-        .string()
-        .min(8, "Senha deve ter pelo menos 8 caracteres")
-        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Senha deve conter pelo menos: 1 letra minúscula, 1 maiúscula e 1 número"),
-    email: zod_1.z.email({ message: "Por favor, insira um email válido!" })
-    //Espaço para validação (se necessária da FK Empresa)
-});
 const criarUsuario = async (req, res) => {
     try {
-        const validatedUserData = criarUsuarioSchema.parse(req.body);
+        const validatedUserData = userSchemas_1.criarUsuarioSchema.parse(req.body);
         const hashedUserPassword = await bcrypt_1.default.hash(validatedUserData.senha, 12);
         const user = await prisma_1.default.usuario.create({
             data: {
@@ -77,7 +57,3 @@ const criarUsuario = async (req, res) => {
     }
 };
 exports.criarUsuario = criarUsuario;
-// Schema para atualização (campos opcionais)
-exports.atualizarUsuarioSchema = criarUsuarioSchema.partial().omit({
-    cpf: true // CPF não pode ser alterado
-});

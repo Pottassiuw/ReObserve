@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken"
 import  {Request, Response, NextFunction} from "express"
-import {AuthService} from "../helper/authservice"
+import {AuthService} from "../Helpers/authservice"
 
 const authSession = (req: Request, res:Response, next: NextFunction ) => {
     try {
