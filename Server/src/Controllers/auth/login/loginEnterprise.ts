@@ -1,47 +1,37 @@
 import { Request, Response } from "express";
-import { AuthService } from "../../../helper/authservice";
-import prisma from "../../../prisma/prisma";
+import { AuthService } from "../../../Helpers/authservice";
+import prisma from "../../../Prisma/prisma";
+import type { EnterprisePayloadLogin } from "../../../@types/types";
 
-type UserPayloadLogin = { email: string; senha: string };
-
-const loginUser = async (req: Request, res: Response) => {
+const loginEmpresa = async (req: Request, res: Response) => {
   try {
-    const { email, senha }: UserPayloadLogin = req.body;
-    console.log(email, senha);
+    const { cnpj, senha }: EnterprisePayloadLogin = req.body;
+    console.log("=== LOGIN DEBUG ===");
+    console.log("Request body:", req.body);
     // Validação de entrada
-    if (!email || !senha) {
+    if (!cnpj || !senha) {
       return res.status(400).json({
         success: false,
-        error: "Email e senha são obrigatórios",
+        error: "CNPJ e senha são obrigatórios",
         code: "MISSING_CREDENTIALS",
       });
     }
-
-    // Buscar usuário com informações da empresa
-    const user = await prisma.usuario.findUnique({
-      where: { email },
-      include: {
-        empresa: {
-          select: {
-            id: true,
-            razaoSocial: true,
-          },
-        },
-      },
+    const cnpjFiltrado = cnpj.replace(/[^\d]+/g, "");
+    const empresa = await prisma.empresa.findUnique({
+      where: { cnpj: cnpjFiltrado },
     });
-
+    console.log("CREDENCIAIS DA EMPRESA:", empresa);
     // Verificar se usuário existe
-    if (!user || !user.empresa) {
+    if (!empresa) {
       return res.status(401).json({
         success: false,
         error: "Credenciais inválidas",
         code: "INVALID_CREDENTIALS",
       });
     }
-
     // Verificar senha
-    const isPasswordValid = await AuthService.VerifyHash(user.senha, senha);
-
+    const isPasswordValid = await AuthService.VerifyHash(empresa.senha, senha);
+    console.log(isPasswordValid);
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
@@ -49,10 +39,8 @@ const loginUser = async (req: Request, res: Response) => {
         code: "INVALID_CREDENTIALS",
       });
     }
-
     // Gerar token
-    const token = AuthService.generateToken("user", user.id);
-
+    const token = AuthService.generateToken("enterprise", empresa.id);
     // Configurar cookie com todas as opções de segurança
     res.cookie("auth-token", token, {
       httpOnly: true,
@@ -64,15 +52,11 @@ const loginUser = async (req: Request, res: Response) => {
     return res.json({
       success: true,
       message: "Login realizado com sucesso!",
-      user: {
-        id: user.id,
-        email: user.email,
-        nome: user.nome,
-        tipo: "user", // Consistencia de dados!
-        empresa: {
-          id: user.empresa.id,
-          razaoSocial: user.empresa.razaoSocial,
-        },
+      empresa: {
+        id: empresa.id,
+        nome: empresa.nomeFantasia,
+        naturezaJuridica: empresa.naturezaJuridica,
+        tipo: "empresa",
       },
     });
   } catch (error) {
@@ -86,4 +70,4 @@ const loginUser = async (req: Request, res: Response) => {
   }
 };
 
-export default loginUser;
+export default loginEmpresa;

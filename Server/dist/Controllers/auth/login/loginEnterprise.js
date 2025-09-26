@@ -3,34 +3,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const authservice_1 = require("../../../helper/authservice");
-const prisma_1 = __importDefault(require("../../../prisma/prisma"));
-const loginUser = async (req, res) => {
+const authservice_1 = require("../../../Helpers/authservice");
+const prisma_1 = __importDefault(require("../../../Prisma/prisma"));
+const loginEmpresa = async (req, res) => {
     try {
-        const { email, senha } = req.body;
-        console.log(email, senha);
+        const { cnpj, senha } = req.body;
+        console.log("=== LOGIN DEBUG ===");
+        console.log("Request body:", req.body);
         // Validação de entrada
-        if (!email || !senha) {
+        if (!cnpj || !senha) {
             return res.status(400).json({
                 success: false,
-                error: "Email e senha são obrigatórios",
+                error: "CNPJ e senha são obrigatórios",
                 code: "MISSING_CREDENTIALS",
             });
         }
-        // Buscar usuário com informações da empresa
-        const user = await prisma_1.default.usuario.findUnique({
-            where: { email },
-            include: {
-                empresa: {
-                    select: {
-                        id: true,
-                        razaoSocial: true,
-                    },
-                },
-            },
+        const cnpjFiltrado = cnpj.replace(/[^\d]+/g, "");
+        const empresa = await prisma_1.default.empresa.findUnique({
+            where: { cnpj: cnpjFiltrado },
         });
+        console.log("CREDENCIAIS DA EMPRESA:", empresa);
         // Verificar se usuário existe
-        if (!user || !user.empresa) {
+        if (!empresa) {
             return res.status(401).json({
                 success: false,
                 error: "Credenciais inválidas",
@@ -38,7 +32,8 @@ const loginUser = async (req, res) => {
             });
         }
         // Verificar senha
-        const isPasswordValid = await authservice_1.AuthService.VerifyHash(user.senha, senha);
+        const isPasswordValid = await authservice_1.AuthService.VerifyHash(empresa.senha, senha);
+        console.log(isPasswordValid);
         if (!isPasswordValid) {
             return res.status(401).json({
                 success: false,
@@ -47,7 +42,7 @@ const loginUser = async (req, res) => {
             });
         }
         // Gerar token
-        const token = authservice_1.AuthService.generateToken("user", user.id);
+        const token = authservice_1.AuthService.generateToken("enterprise", empresa.id);
         // Configurar cookie com todas as opções de segurança
         res.cookie("auth-token", token, {
             httpOnly: true,
@@ -58,15 +53,11 @@ const loginUser = async (req, res) => {
         return res.json({
             success: true,
             message: "Login realizado com sucesso!",
-            user: {
-                id: user.id,
-                email: user.email,
-                nome: user.nome,
-                tipo: "user", // Consistencia de dados!
-                empresa: {
-                    id: user.empresa.id,
-                    razaoSocial: user.empresa.razaoSocial,
-                },
+            empresa: {
+                id: empresa.id,
+                nome: empresa.nomeFantasia,
+                naturezaJuridica: empresa.naturezaJuridica,
+                tipo: "empresa",
             },
         });
     }
@@ -79,4 +70,4 @@ const loginUser = async (req, res) => {
         });
     }
 };
-exports.default = loginUser;
+exports.default = loginEmpresa;
