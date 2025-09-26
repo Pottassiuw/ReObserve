@@ -68,7 +68,7 @@ model Lancamento {
   /* Relacão de Um 1-n entre Lançamento e Períodos */
   periodo Periodo @relation(fields: [periodoId], references: [id])
   periodoId Int
-  /* Um lançamento tem várias imagens e taz consigo, o usuário e suas informações*/
+  /* Um lançamento tem várias imagens e taz consigo: o usuário e suas informações*/
   imagens Imagem[]
   usuarios Usuario[]
   notaFiscal NotaFiscal?

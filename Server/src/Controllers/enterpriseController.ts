@@ -20,8 +20,16 @@ export const retornarEmpresas = async (
       code: "ALL_ENTERPRISES",
       enterprises: enterprise,
     });
-  } catch (error) {
-    console.error("Erro no servidor:", error);
+  } catch (error: any) {
+    console.error("Tipo do erro:", error.constructor.name);
+    console.error("Mensagem:", error.message);
+    console.error("Stack:", error.stack);
+
+    return res.status(500).json({
+      error: "Erro interno do servidor",
+      success: false,
+      errorType: error.constructor.name,
+    });
   }
 };
 
@@ -199,10 +207,4 @@ export const deletarUsuario = async (
   }
 };
 
-export const CriarGrupo = (req: Request, res: Response) => {
-  try {
-    
-  } catch (error) {
-    
-  }
-}
+

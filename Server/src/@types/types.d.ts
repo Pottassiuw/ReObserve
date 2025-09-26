@@ -22,3 +22,15 @@ export interface Usuario {
 
 export type EnterprisePayloadLogin = { cnpj: string; senha: string };
 export type UserPayloadLogin = { email: string; senha: string };
+
+export type GroupPermitions = {
+  admin?: string;
+  lancamento?: string;
+  periodo?: string;
+  verLancamentos?: string;
+  editarLancamentos?: string;
+  verPeriodos?: string;
+  editarPeriodos?: string;
+  deletarLancamentos?: string;
+  deletarPeriodos?: string;
+}
