@@ -7,9 +7,10 @@ const authservice_1 = require("../../../helper/authservice");
 const prisma_1 = __importDefault(require("../../../prisma/prisma"));
 const loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, senha } = req.body;
+        console.log(email, senha);
         // Validação de entrada
-        if (!email || !password) {
+        if (!email || !senha) {
             return res.status(400).json({
                 success: false,
                 error: "Email e senha são obrigatórios",
@@ -28,7 +29,7 @@ const loginUser = async (req, res) => {
                 },
             },
         });
-        // Verificar se usuário existe E se a empresa está ativa
+        // Verificar se usuário existe
         if (!user || !user.empresa) {
             return res.status(401).json({
                 success: false,
@@ -37,7 +38,7 @@ const loginUser = async (req, res) => {
             });
         }
         // Verificar senha
-        const isPasswordValid = await authservice_1.AuthService.VerifyHash(user.senha, password);
+        const isPasswordValid = await authservice_1.AuthService.VerifyHash(user.senha, senha);
         if (!isPasswordValid) {
             return res.status(401).json({
                 success: false,

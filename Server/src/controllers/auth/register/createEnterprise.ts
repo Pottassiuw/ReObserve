@@ -10,41 +10,32 @@ import prisma from "../../../prisma/prisma";
 function isValidCNPJ(cnpj: string): boolean {
   // Remove formatação (pontos, barras, hífens)
   cnpj = cnpj.replace(/[^\d]+/g, '');
-  
   // Verifica se tem 14 dígitos
   if (cnpj.length !== 14) return false;
-  
   // Verifica se não são todos iguais (11111111111111, etc)
   if (/^(\d)\1+$/.test(cnpj)) return false;
-  
   // Validação dos dígitos verificadores
   let tamanho = cnpj.length - 2;
   let numeros = cnpj.substring(0, tamanho);
   let digitos = cnpj.substring(tamanho);
   let soma = 0;
   let pos = tamanho - 7;
-  
   for (let i = tamanho; i >= 1; i--) {
     soma += parseInt(numeros.charAt(tamanho - i)) * pos--;
     if (pos < 2) pos = 9;
   }
-  
   let resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
   if (resultado != parseInt(digitos.charAt(0))) return false;
-  
   tamanho = tamanho + 1;
   numeros = cnpj.substring(0, tamanho);
   soma = 0;
   pos = tamanho - 7;
-  
   for (let i = tamanho; i >= 1; i--) {
     soma += parseInt(numeros.charAt(tamanho - i)) * pos--;
     if (pos < 2) pos = 9;
   }
-  
   resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
   if (resultado != parseInt(digitos.charAt(1))) return false;
-  
   return true;
 }
 
@@ -62,7 +53,6 @@ const criarEmpresaSchema = z.object({
     .min(8, "Senha deve ter pelo menos 8 caracteres")
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 
            "Senha deve conter pelo menos: 1 letra minúscula, 1 maiúscula e 1 número"),
-  
   nomeFantasia: z
     .string()
     .optional()

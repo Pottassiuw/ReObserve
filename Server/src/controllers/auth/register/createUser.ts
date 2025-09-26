@@ -5,8 +5,6 @@ import { z } from "zod"
 
 
 //schema Zod para validação de dados
-
-
 const criarUsuarioSchema = z.object({
     nome: z.string().min(1).max(48),
     cpf: z.string().refine((cpf: string) => {
@@ -32,7 +30,7 @@ type criarUsuarioInput = z.infer<typeof criarUsuarioSchema>;
 export const criarUsuario = async (req: Request, res: Response) => {
     try {
 	const validatedUserData: criarUsuarioInput = criarUsuarioSchema.parse(req.body);
-	
+
 	const hashedUserPassword = await bcrypt.hash(validatedUserData.senha, 12);
 
 	const user = await prisma.usuario.create({
