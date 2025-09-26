@@ -38,11 +38,7 @@ export const criarEmpresa = async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         message: "Dados inválidos",
-        errors: error.issues.map((err: z.ZodIssue) => ({
-          field: err.path.join('.'),
-          message: err.message
-        }))
-      });
+      })
     }
     
     // Erro de constraint unique do Prisma (CNPJ duplicado)

@@ -17,8 +17,10 @@ export const criarUsuarioSchema = z.object({
     .min(8, "Senha deve ter pelo menos 8 caracteres")
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 
 	"Senha deve conter pelo menos: 1 letra minúscula, 1 maiúscula e 1 número"),
-    email: z.email({message: "Por favor, insira um email válido!"})
+    email: z.email({message: "Por favor, insira um email válido!"}),
     //Espaço para validação (se necessária da FK Empresa)
+    empresaId: z.number().max(15, "Índice fora do alcançe"),
+    grupoId: z.number().max(15, "Índice fora do alcançe"),
 });
 
 export type criarUsuarioInput = z.infer<typeof criarUsuarioSchema>;

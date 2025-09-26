@@ -3,6 +3,6 @@ import { CriarGrupo } from "../Controllers/groupController";
 
 const router = Router();
 
-router.post("/:empresaId/add", CriarGrupo)
+router.post("/enterprises/:empresaId/add", CriarGrupo)
 
 export default router;

@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../Prisma/prisma";
 import { GroupPermitions } from "../@types/types";
-import { success } from "zod";
 
 export const CriarGrupo = async (
   req: Request,
@@ -64,24 +63,53 @@ export const CriarGrupo = async (
   }
 };
 
-export const usuarioGrupo = async (
+export const colocarUsuarioGrupo = async (
   req: Request,
   res: Response,
+  groupId: number,
   empresaId: number,
   userId: number
-): Promise<Response | void> => {
+): Promise<Response> => {
   try {
-    if (!empresaId && !userId) {
+    if (!empresaId && !userId && !groupId) {
       return res.status(400).json({
-        message: "Error message",
+        code: "USERS_AND_ENTERPRISES_AND_GROUPS_NOT_FOUND",
+        error: "Doensn't exists"
       });
     }
-    const empresa = await prisma.grupo.findFirst({
-      where: {
-        empresaId,
-      },
-    });
-    console.log(empresa);
+    const user = await prisma.usuario.findUnique({
+      where: {id: userId}
+    })
+
+    if(!user || user.empresaId !== empresaId){
+      return res.status(400).json({
+        error: "Usuário não encontrado ou não pertence à empresa",
+        code: "NO_USER_OR_USER_DOESN'T_BELONG_TO_ENTERPRISE"
+      })
+    }
+    const group = await prisma.grupo.findUnique({
+      where: {id: groupId}
+    })
+
+    if(!group || group.empresaId !== empresaId) {
+      return res.status(400).json({
+        error: "Grupo não encontrado ou não pertence à empresa",
+        code: "NO_GROUP_OR_USER_DOESN'T_BELONG_TO_ENTERPRISE"
+      })
+    }
+
+    await prisma.usuario.update({
+      where: {id: userId},
+      data: {grupoId: group.id}
+    })
+
+    return res.status(200).json({
+      message: "Usuário agora pertençe ao grupo",
+      success: true,
+      code: "USER_BELONGS_TO_GROUP",
+    })
+  
+   
   } catch (error: any) {
     console.error("Tipo do erro:", error.constructor.name);
     console.error("Mensagem:", error.message);
