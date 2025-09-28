@@ -15,13 +15,12 @@ model Usuario {
   senha       String
   cpf         String   @unique
   nome        String
-  admin       Boolean  @default(false)
   dataCriacao DateTime @default(now())
   empresa     Empresa  @relation(fields: [empresaId], references: [id])
   empresaId   Int
 
-  grupo      Grupo        @relation(fields: [grupoId], references: [id])
-  grupoId    Int
+  grupo      Grupo?        @relation(fields: [grupoId], references: [id])
+  grupoId    Int?
   lancamento Lancamento[]
 }
 
@@ -55,6 +54,7 @@ enum Permissoes {
 
 model Grupo {
   id         Int          @id @default(autoincrement())
+  nome       String
   permissoes Permissoes[]
   usuarios   Usuario[]
   empresas   Empresa      @relation(fields: [empresaId], references: [id])
@@ -83,13 +83,14 @@ model Lancamento {
 
 model NotaFiscal {
   id            Int      @id @default(autoincrement())
-  nome_emitente String
+  nome_emitente String?
   cnpj          String?
   cpf           String?
   numero_nota   String   @unique
   valor         Float?
   chaveAcesso   Int?
-  descricao     String
+  descricao     String?
+  xmlPath       String?
   dataEmissao   DateTime
   dataCriacao   DateTime @default(now())
 

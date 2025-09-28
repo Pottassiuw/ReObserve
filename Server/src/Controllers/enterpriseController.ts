@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import prisma from "../Prisma/prisma";
+import prisma from "../Database/prisma/prisma";
 
 export const retornarEmpresas = async (
   req: Request,

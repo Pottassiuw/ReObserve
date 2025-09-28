@@ -1,3 +1,4 @@
+//TIPOS DA EMPRESA
 export interface Empresa {
   id: number;
   cnpj: string;
@@ -10,7 +11,9 @@ export interface Empresa {
   CNAES: string;
   dataCriacao: string;
 }
+export type EnterprisePayloadLogin = { cnpj: string; senha: string };
 
+//TIPOS DO USUÁRIO
 export interface Usuario {
   id: number;
   cpf: string;
@@ -19,18 +22,21 @@ export interface Usuario {
   email: string;
   empresaId: number;
 }
-
-export type EnterprisePayloadLogin = { cnpj: string; senha: string };
 export type UserPayloadLogin = { email: string; senha: string };
 
-export type GroupPermitions = {
-  admin?: string;
-  lancamento?: string;
-  periodo?: string;
-  verLancamentos?: string;
-  editarLancamentos?: string;
-  verPeriodos?: string;
-  editarPeriodos?: string;
-  deletarLancamentos?: string;
-  deletarPeriodos?: string;
+//TIPOS DOS GRUPOS
+import { Permissoes as PrismaPermissoes } from "@prisma/client";
+export { Permissoes } from "@prisma/client";
+export interface CreateGroupRequest {
+  nome: string;
+  permissoes: PrismaPermissoes[];
+}
+
+export interface UpdatePermissionsRequest {
+  permissoes: PrismaPermissoes[];
+}
+
+export interface UpdateGroupRequest {
+  nome?: string;
+  permissoes?: PrismaPermissoes[];
 }

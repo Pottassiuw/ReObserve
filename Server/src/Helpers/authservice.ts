@@ -2,9 +2,8 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import dotenv from "dotenv"
 
-dotenv.config({path: "../../../.env"})
-
-const JWT_SECRET = process.env.JWT_SECRET
+dotenv.config();
+const JWT_SECRET = process.env.JWT_SECRET || "";
 
 if (!JWT_SECRET) {
     throw new Error("JWT_SECRET não foi criado");

@@ -20,7 +20,7 @@ export const criarUsuarioSchema = z.object({
     email: z.email({message: "Por favor, insira um email válido!"}),
     //Espaço para validação (se necessária da FK Empresa)
     empresaId: z.number().max(15, "Índice fora do alcançe"),
-    grupoId: z.number().max(15, "Índice fora do alcançe"),
+    grupoId: z.number().max(15, "Índice fora do alcançe").optional(),
 });
 
 export type criarUsuarioInput = z.infer<typeof criarUsuarioSchema>;

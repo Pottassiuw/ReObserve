@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
-import prisma from "../../../Prisma/prisma";
-import { CriarEmpresaInput, criarEmpresaSchema } from "../../../Schemas/enterPriseSchemas";
+import prisma from "../../../Database/prisma/prisma";
+import { CriarEmpresaInput, criarEmpresaSchema } from "../../../Schemas/enterpriseSchemas";
 
 export const criarEmpresa = async (req: Request, res: Response) => {
   try {
