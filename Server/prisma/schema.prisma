@@ -1,102 +1,122 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model Usuario {
-  id       Int    @id @default(autoincrement())
-  email    String @unique
-  senha    String
-  cpf String @unique
-  nome String
-  admin Boolean @default(false) 
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  senha       String
+  cpf         String   @unique
+  nome        String
   dataCriacao DateTime @default(now())
+  empresa     Empresa  @relation(fields: [empresaId], references: [id])
+  empresaId   Int
 
-  empresa Empresa @relation(fields: [empresaId], references: [id])
-  empresaId Int
-
+  grupo      Grupo?        @relation(fields: [grupoId], references: [id])
+  grupoId    Int?
   lancamento Lancamento[]
 }
 
 model Empresa {
-  id           Int    @id @default(autoincrement())
-  cnpj         String
-  nomeFantasia String?
-  senha String
-  razaoSocial String
-  endereco String
+  id                Int      @id @default(autoincrement())
+  cnpj              String   @unique
+  nomeFantasia      String?
+  senha             String
+  razaoSocial       String
+  endereco          String
   situacaoCadastral String
-  naturezaJuridica String
-  CNAES String
-  dataCriacao DateTime @default(now())
+  naturezaJuridica  String
+  CNAES             String
+  dataCriacao       DateTime @default(now())
 
   usuarios Usuario[]
+  grupo    Grupo[]
+}
+
+enum Permissoes {
+  admin
+  lancamento
+  periodo
+  verLancamentos
+  editarLancamentos
+  verPeriodos
+  editarPeriodos
+  deletarLancamentos
+  deletarPeriodos
+}
+
+model Grupo {
+  id         Int          @id @default(autoincrement())
+  nome       String
+  permissoes Permissoes[]
+  usuarios   Usuario[]
+  empresas   Empresa      @relation(fields: [empresaId], references: [id])
+  empresaId  Int
 }
 
 model Lancamento {
-  id Int @id @default(autoincrement())
-  data_lancamento DateTime 
-  latitude Float
-  longitude Float
-
-  dataCriacao DateTime @default(now())
-  dataAtualizacao DateTime @updatedAt
-
-  /* Relacão de Um 1-n entre Lançamento e Períodos */
-  periodo Periodo @relation(fields: [periodoId], references: [id])
-  periodoId Int
-  /* Um lançamento tem várias imagens e taz consigo, o usuário e suas informações*/
-  imagens Imagem[]
-  usuarios Usuario[]
-  notaFiscal NotaFiscal?
-
+  id              Int         @id @default(autoincrement())
+  data_lancamento DateTime
+  latitude        Float
+  longitude       Float
+  dataCriacao     DateTime    @default(now())
+  dataAtualizacao DateTime    @updatedAt
+  /**
+   * Relacão de Um 1-n entre Lançamento e Períodos
+   */
+  periodo         Periodo     @relation(fields: [periodoId], references: [id])
+  periodoId       Int
+  /**
+   * Um lançamento tem várias imagens e taz consigo: o usuário e suas informações
+   */
+  imagens         Imagem[]
+  usuarios        Usuario[]
+  notaFiscal      NotaFiscal?
 }
 
 model NotaFiscal {
-  id          Int     @id @default(autoincrement())
-  nome_emitente String
-  cnpj        String?
-  cpf         String?
-  numero_nota String @unique
-  valor       Float?
-  chaveAcesso Int?
-  descricao String
-  dataEmissao DateTime
-  dataCriacao DateTime @default(now())
+  id            Int      @id @default(autoincrement())
+  nome_emitente String?
+  cnpj          String?
+  cpf           String?
+  numero_nota   String   @unique
+  valor         Float?
+  chaveAcesso   Int?
+  descricao     String?
+  xmlPath       String?
+  dataEmissao   DateTime
+  dataCriacao   DateTime @default(now())
 
-  /* Relacão de 1-n entre Lancamento e Períodos */
-  lancamento Lancamento @relation(fields: [lancamentoId], references: [id])
-  lancamentoId Int @unique
+  /**
+   * Relacão de 1-n entre Lancamento e Períodos
+   */
+  lancamento   Lancamento @relation(fields: [lancamentoId], references: [id])
+  lancamentoId Int        @unique
 }
 
 model Imagem {
-  id           Int      @id @default(autoincrement())
-  url          String
-  dataCriacao DateTime @default(now())
-  dataAtualizacao DateTime @updatedAt
-
-  /* Relação de 1-n entre Lancamentos e Imagens*/
-  lancamento Lancamento @relation(fields: [lancamentoId], references: [id])
-  lancamentoId Int
+  id              Int        @id @default(autoincrement())
+  url             String
+  dataCriacao     DateTime   @default(now())
+  dataAtualizacao DateTime   @updatedAt
+  /**
+   * Relação de 1-n entre Lancamentos e Imagens
+   */
+  lancamento      Lancamento @relation(fields: [lancamentoId], references: [id])
+  lancamentoId    Int
 }
 
 model Periodo {
-  id           Int @id @default(autoincrement())
-  dataInicio  DateTime @default(now())
-  dataFim     DateTime
-  fechado      Boolean @default(false)
-
+  id         Int          @id @default(autoincrement())
+  dataInicio DateTime     @default(now())
+  dataFim    DateTime
+  fechado    Boolean      @default(false)
   lancamento Lancamento[]
 }

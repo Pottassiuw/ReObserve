@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const groupController_1 = require("../Controllers/groupController");
+const router = (0, express_1.Router)();
+router.post("/enterprises/:empresaId/add", groupController_1.CriarGrupo);
+router.get("/enterprises/:empresaId", groupController_1.verGruposEmpresa);
+router.post("/enterprises/:empresaId/groups/:grupoId/users/:usuarioId", groupController_1.colocarUsuarioGrupo);
+router.delete("/enterprises/:empresaId/groups/:grupoId", groupController_1.deletarGrupoEmpresa);
+router.delete("/enterprises/:empresaId/groups", groupController_1.deletarTodosGruposEmpresa);
+exports.default = router;
