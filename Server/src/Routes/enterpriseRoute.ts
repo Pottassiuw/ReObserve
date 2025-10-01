@@ -8,19 +8,20 @@ import {
 } from "../Controllers/enterpriseController";
 
 import { loginEmpresa, logoutEmpresa } from "../Controllers/auth/Enterprise";
+import { authSession } from "../Middlewares/authMiddleware";
 
 const router = Router();
 
 //Empresa
 router.post("/auth/register", criarEmpresa);
 router.post("/auth/login", loginEmpresa);
-router.post("/auth/logout", logoutEmpresa);
+router.post("/auth/logout", authSession, logoutEmpresa);
 router.get("/", retornarEmpresas);
 router.get("/:id", retornarEmpresasId);
 
 //Deletar todos os usuários da empresa
-router.delete("/:id/users/delete/", deletarTodosUsuariosEmpresa);
+router.delete("/:id/users/delete/", authSession, deletarTodosUsuariosEmpresa);
 //Deltar usuário específico da empresa
-router.delete("/:id/users/delete/:userId", deletarUsuario);
+router.delete("/:id/users/delete/:userId", authSession, deletarUsuario);
 
 export default router;

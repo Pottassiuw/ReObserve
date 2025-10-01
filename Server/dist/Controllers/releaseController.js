@@ -1,10 +1,15 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.criarLancamento = void 0;
+const supabase_1 = __importDefault(require("../Database/supabase/supabase"));
 const criarLancamento = async (req, res) => {
     try {
-        const body = req.body;
-        console.log(body);
+        const { data, error } = await supabase_1.default.storage.getBucket("Lancamentos");
+        console.log(data);
+        console.log("i hate niggas!");
     }
     catch (error) {
         console.error("Tipo do erro:", error.constructor.name);

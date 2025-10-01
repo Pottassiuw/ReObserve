@@ -122,7 +122,7 @@ const loginUsuario = async (req: Request, res: Response) => {
 const logoutUsuario = async (req: Request, res: Response) => {
   try {
     //Limpar o cookie para deslogar a seção
-    res.clearCookie("auth-user-token", {
+    res.clearCookie("auth-token", {
       httpOnly: true,
       sameSite: "strict", 
     });

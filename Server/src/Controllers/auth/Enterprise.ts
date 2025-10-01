@@ -123,7 +123,7 @@ const loginEmpresa = async (req: Request, res: Response):Promise<Response> => {
 
 const logoutEmpresa = async (req: Request, res: Response):Promise<Response> => {
   try {
-    res.clearCookie("auth-enterprise-token", {
+    res.clearCookie("auth-token", {
       httpOnly: true,
       sameSite: "strict", 
     });

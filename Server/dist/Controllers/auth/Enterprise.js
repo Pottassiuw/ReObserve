@@ -8,11 +8,11 @@ const authservice_1 = require("../../Helpers/authservice");
 const prisma_1 = __importDefault(require("../../Database/prisma/prisma"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const zod_1 = require("zod");
-const enterPriseSchemas_1 = require("../../Schemas/enterPriseSchemas");
+const enterpriseSchemas_1 = require("../../Schemas/enterpriseSchemas");
 const criarEmpresa = async (req, res) => {
     try {
         // Validação dos dados de entrada
-        const validatedData = enterPriseSchemas_1.criarEmpresaSchema.parse(req.body);
+        const validatedData = enterpriseSchemas_1.criarEmpresaSchema.parse(req.body);
         // Hash da senha
         const hashedPassword = await bcrypt_1.default.hash(validatedData.senha, 12);
         // Criação da empresa
@@ -92,10 +92,10 @@ const loginEmpresa = async (req, res) => {
             });
         }
         const token = authservice_1.AuthService.generateToken("enterprise", empresa.id);
-        res.cookie("auth-enterprise-token", token, {
+        res.cookie("auth-token", token, {
             httpOnly: true,
             maxAge: 1000 * 60 * 60 * 24 * 7, // 7 Dias
-            sameSite: "strict", // Proteção CSRF
+            sameSite: "strict",
         });
         return res.json({
             success: true,
@@ -120,7 +120,7 @@ const loginEmpresa = async (req, res) => {
 exports.loginEmpresa = loginEmpresa;
 const logoutEmpresa = async (req, res) => {
     try {
-        res.clearCookie("auth-enterprise-token", {
+        res.clearCookie("auth-token", {
             httpOnly: true,
             sameSite: "strict",
         });

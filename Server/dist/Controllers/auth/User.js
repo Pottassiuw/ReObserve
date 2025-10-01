@@ -89,7 +89,7 @@ const loginUsuario = async (req, res) => {
         }
         // Gerar token
         const token = authservice_1.AuthService.generateToken("user", user.id);
-        res.cookie("auth-user-token", token, {
+        res.cookie("auth-token", token, {
             httpOnly: true,
             maxAge: 1000 * 60 * 60 * 24 * 7, // 7 Dias
             sameSite: "strict", // Proteção CSRF
@@ -118,7 +118,7 @@ exports.loginUsuario = loginUsuario;
 const logoutUsuario = async (req, res) => {
     try {
         //Limpar o cookie para deslogar a seção
-        res.clearCookie("auth-user-token", {
+        res.clearCookie("auth-token", {
             httpOnly: true,
             sameSite: "strict",
         });

@@ -40,3 +40,8 @@ export interface UpdateGroupRequest {
   nome?: string;
   permissoes?: PrismaPermissoes[];
 }
+
+/*
+Tipos do Lançamento
+*/
+
