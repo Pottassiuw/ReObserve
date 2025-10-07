@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.hasAllPermissions = exports.hasPermission = exports.requireAdmin = exports.requireAnyPermission = exports.requirePermissions = exports.authSession = void 0;
+exports.requireSuperAdmin = exports.requirePermissions = exports.authSession = void 0;
 // authMiddleware.ts
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_1 = __importDefault(require("../Database/prisma/prisma"));
@@ -18,7 +18,6 @@ const authSession = async (req, res, next) => {
                 code: "NO_TOKEN",
             });
         }
-        console.log(token);
         let decoded;
         try {
             decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET || "your-secret-key");
@@ -60,7 +59,7 @@ const authSession = async (req, res, next) => {
                 });
             }
             req.auth.user = usuario;
-            // Extrair permissões do grupo (ou array vazio se não tiver grupo)
+            req.auth.isSuperAdmin = usuario.admin;
             req.auth.permissoes = usuario.grupo?.permissoes || [];
         }
         else if (decoded.type === "enterprise") {
@@ -79,7 +78,7 @@ const authSession = async (req, res, next) => {
                 });
             }
             req.auth.enterprise = empresa;
-            // Empresas têm todas as permissões (admin)
+            req.auth.isSuperAdmin = false;
             req.auth.permissoes = Object.values(prisma_2.Permissoes);
         }
         next();
@@ -95,7 +94,7 @@ const authSession = async (req, res, next) => {
     }
 };
 exports.authSession = authSession;
-const requirePermissions = (...permissoesNecessarias) => {
+const requirePermissions = (...permissoes) => {
     return (req, res, next) => {
         if (!req.auth) {
             return res.status(401).json({
@@ -104,65 +103,37 @@ const requirePermissions = (...permissoesNecessarias) => {
                 code: "NOT_AUTHENTICATED",
             });
         }
-        const permissoesUsuario = req.auth.permissoes || [];
-        // permissão de admin (bypass)
-        if (permissoesUsuario.includes(prisma_2.Permissoes.admin)) {
+        const userPermissoes = req.auth.permissoes || [];
+        if (userPermissoes.includes(prisma_2.Permissoes.admin)) {
             return next();
         }
-        // Verificar se tem TODAS as permissões necessárias
-        const temTodasPermissoes = permissoesNecessarias.every((permissao) => permissoesUsuario.includes(permissao));
-        if (!temTodasPermissoes) {
-            const faltantes = permissoesNecessarias.filter((p) => !permissoesUsuario.includes(p));
+        const hasAll = permissoes.every((p) => userPermissoes.includes(p));
+        if (!hasAll) {
             return res.status(403).json({
                 error: "Permissão negada",
                 success: false,
                 code: "FORBIDDEN",
-                permissoesFaltantes: faltantes,
-                permissoesNecessarias: permissoesNecessarias,
             });
         }
         next();
     };
 };
 exports.requirePermissions = requirePermissions;
-const requireAnyPermission = (...permissoes) => {
-    return (req, res, next) => {
-        if (!req.auth) {
-            return res.status(401).json({
-                error: "Usuário não autenticado",
-                success: false,
-                code: "NOT_AUTHENTICATED",
-            });
-        }
-        const permissoesUsuario = req.auth.permissoes || [];
-        // Admin sempre passa
-        if (permissoesUsuario.includes(prisma_2.Permissoes.admin)) {
-            return next();
-        }
-        // Verificar se tem PELO MENOS UMA permissão
-        const temAlgumaPermissao = permissoes.some((permissao) => permissoesUsuario.includes(permissao));
-        if (!temAlgumaPermissao) {
-            return res.status(403).json({
-                error: "Permissão negada",
-                success: false,
-                code: "FORBIDDEN",
-                permissoesNecessarias: permissoes,
-            });
-        }
-        next();
-    };
+const requireSuperAdmin = (req, res, next) => {
+    if (!req.auth) {
+        return res.status(401).json({
+            error: "Usuário não autenticado",
+            success: false,
+            code: "NOT_AUTHENTICATED",
+        });
+    }
+    if (!req.auth.isSuperAdmin) {
+        return res.status(403).json({
+            error: "Acesso negado. Apenas super administradores.",
+            success: false,
+            code: "SUPER_ADMIN_REQUIRED",
+        });
+    }
+    next();
 };
-exports.requireAnyPermission = requireAnyPermission;
-exports.requireAdmin = (0, exports.requirePermissions)(prisma_2.Permissoes.admin);
-const hasPermission = (req, permissao) => {
-    const permissoes = req.auth?.permissoes || [];
-    return (permissoes.includes(prisma_2.Permissoes.admin) || permissoes.includes(permissao));
-};
-exports.hasPermission = hasPermission;
-const hasAllPermissions = (req, ...permissoesNecessarias) => {
-    const permissoes = req.auth?.permissoes || [];
-    if (permissoes.includes(prisma_2.Permissoes.admin))
-        return true;
-    return permissoesNecessarias.every((p) => permissoes.includes(p));
-};
-exports.hasAllPermissions = hasAllPermissions;
+exports.requireSuperAdmin = requireSuperAdmin;

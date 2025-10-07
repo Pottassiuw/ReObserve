@@ -57,7 +57,7 @@ export const criarLancamento = async (req: Request, res: Response) => {
         notaFiscalId: notaFiscalCriada.id,
         usuarioId: req.auth!.user!.id,
         empresaId: req.auth!.user!.empresaId,
-        periodoId: periodoId ? parseInt(periodoId) : null,
+        periodoId: parseInt(periodoId),
         imagens: {
           create: imageUrls.map((url: string) => ({ url })),
         },

@@ -9,7 +9,6 @@ const authMiddleware_1 = require("../Middlewares/authMiddleware");
 const router = (0, express_1.Router)();
 //Usuarios
 router.post("/auth/register", User_2.criarUsuario);
-router.get("/", userController_1.retornarUsuarios);
 router.get("/:id", userController_1.retornarUsuarioId);
 router.delete("/:id", authMiddleware_1.authSession, enterpriseController_1.deletarUsuario);
 router.post("/auth/login", User_1.loginUsuario);
