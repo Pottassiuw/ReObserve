@@ -206,5 +206,89 @@ export const deletarUsuario = async (
     });
   }
 };
+export const deletarEmpresa = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const idParam = req.params.id;
+    if (!idParam) {
+      return res.status(400).json({
+        error: "ID não fornecido",
+        success: false,
+      });
+    }
+    const id = parseInt(idParam);
+    if (isNaN(id)) {
+      return res.status(400).json({
+        error: "ID deve ser um número",
+        success: false,
+        receivedId: idParam,
+      });
+    }
 
+    const empresa = await prisma.empresa.findFirst({
+      where: {
+        id,
+      },
+    });
+    if (!empresa) {
+      return res.status(400).json({
+        success: false,
+        code: "NO_ENTERPRISE_FOUND",
+      });
+    }
 
+    await prisma.empresa.delete({
+      where: {
+        id,
+      },
+    });
+    return res.status(200).json({
+      success: false,
+      message: `Empresa ${empresa.nomeFantasia} deletada com sucesso!`,
+    });
+  } catch (error: any) {
+    console.error("Tipo do erro:", error.constructor.name);
+    console.error("Mensagem:", error.message);
+    console.error("Stack:", error.stack);
+
+    return res.status(500).json({
+      error: "Erro interno do servidor",
+      success: false,
+      errorType: error.constructor.name,
+    });
+  }
+};
+
+export const deletarTodasEmpresas = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const empresas = await prisma.empresa.findMany();
+    if (!empresas) {
+      return res.status(400).json({
+        success: false,
+        code: "NO_ENTERPRISES_FOUND",
+      });
+    }
+
+    await prisma.empresa.deleteMany();
+
+    return res.status(200).json({
+      success: false,
+      message: `${empresas.length} Empresas foram deletadas 🔥`
+    });
+  } catch (error: any) {
+    console.error("Tipo do erro:", error.constructor.name);
+    console.error("Mensagem:", error.message);
+    console.error("Stack:", error.stack);
+
+    return res.status(500).json({
+      error: "Erro interno do servidor",
+      success: false,
+      errorType: error.constructor.name,
+    });
+  }
+};

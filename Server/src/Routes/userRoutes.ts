@@ -11,7 +11,6 @@ const router = Router();
 
 //Usuarios
 router.post("/auth/register", criarUsuario);
-router.get("/", retornarUsuarios);
 router.get("/:id", retornarUsuarioId);
 router.delete("/:id", authSession, deletarUsuario);
 router.post("/auth/login", loginUsuario);

@@ -15,6 +15,7 @@ model Usuario {
   senha       String
   cpf         String   @unique
   nome        String
+  admin       Boolean  @default(false)
   dataCriacao DateTime @default(now())
   empresa     Empresa  @relation(fields: [empresaId], references: [id])
   empresaId   Int
@@ -36,9 +37,10 @@ model Empresa {
   CNAES             String
   dataCriacao       DateTime @default(now())
 
-  usuarios   Usuario[]
-  grupo      Grupo[]
-  NotaFiscal NotaFiscal[]
+  usuarios    Usuario[]
+  grupo       Grupo[]
+  NotaFiscal  NotaFiscal[]
+  Lancamentos Lancamento[]
 }
 
 enum Permissoes {
@@ -72,7 +74,12 @@ model Lancamento {
   periodoId       Int?
   notaFiscalId    Int      @unique
   usuarioId       Int
+  empresaId       Int
 
+  /**
+   * Relações
+   */
+  empresa    Empresa    @relation(fields: [empresaId], references: [id])
   periodo    Periodo?   @relation(fields: [periodoId], references: [id])
   notaFiscal NotaFiscal @relation(fields: [notaFiscalId], references: [id])
   imagens    Imagem[]

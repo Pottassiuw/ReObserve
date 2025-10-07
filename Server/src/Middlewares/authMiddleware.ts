@@ -13,6 +13,7 @@ declare global {
         user?: Usuario & { grupo: Grupo | null };
         enterprise?: Empresa;
         permissoes?: Permissoes[];
+        isSuperAdmin?: boolean;
       };
     }
   }
@@ -86,7 +87,7 @@ export const authSession = async (
       }
 
       req.auth.user = usuario;
-      // Extrair permissões do grupo (ou array vazio se não tiver grupo)
+      req.auth.isSuperAdmin = usuario.admin;
       req.auth.permissoes = usuario.grupo?.permissoes || [];
     } else if (decoded.type === "enterprise") {
       const empresa = await prisma.empresa.findUnique({
@@ -106,7 +107,7 @@ export const authSession = async (
       }
 
       req.auth.enterprise = empresa;
-      // Empresas têm todas as permissões (admin)
+      req.auth.isSuperAdmin = false;
       req.auth.permissoes = Object.values(Permissoes);
     }
 
@@ -122,7 +123,8 @@ export const authSession = async (
     });
   }
 };
-export const requirePermissions = (...permissoesNecessarias: Permissoes[]) => {
+
+export const requirePermissions = (...permissoes: Permissoes[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.auth) {
       return res.status(401).json({
@@ -132,84 +134,46 @@ export const requirePermissions = (...permissoesNecessarias: Permissoes[]) => {
       });
     }
 
-    const permissoesUsuario = req.auth.permissoes || [];
+    const userPermissoes = req.auth.permissoes || [];
 
-    // permissão de admin (bypass)
-    if (permissoesUsuario.includes(Permissoes.admin)) {
+    if (userPermissoes.includes(Permissoes.admin)) {
       return next();
     }
 
-    // Verificar se tem TODAS as permissões necessárias
-    const temTodasPermissoes = permissoesNecessarias.every((permissao) =>
-      permissoesUsuario.includes(permissao)
-    );
+    const hasAll = permissoes.every((p) => userPermissoes.includes(p));
 
-    if (!temTodasPermissoes) {
-      const faltantes = permissoesNecessarias.filter(
-        (p) => !permissoesUsuario.includes(p)
-      );
-
+    if (!hasAll) {
       return res.status(403).json({
         error: "Permissão negada",
         success: false,
         code: "FORBIDDEN",
-        permissoesFaltantes: faltantes,
-        permissoesNecessarias: permissoesNecessarias,
       });
     }
 
     next();
   };
 };
-export const requireAnyPermission = (...permissoes: Permissoes[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.auth) {
-      return res.status(401).json({
-        error: "Usuário não autenticado",
-        success: false,
-        code: "NOT_AUTHENTICATED",
-      });
-    }
 
-    const permissoesUsuario = req.auth.permissoes || [];
-
-    // Admin sempre passa
-    if (permissoesUsuario.includes(Permissoes.admin)) {
-      return next();
-    }
-
-    // Verificar se tem PELO MENOS UMA permissão
-    const temAlgumaPermissao = permissoes.some((permissao) =>
-      permissoesUsuario.includes(permissao)
-    );
-
-    if (!temAlgumaPermissao) {
-      return res.status(403).json({
-        error: "Permissão negada",
-        success: false,
-        code: "FORBIDDEN",
-        permissoesNecessarias: permissoes,
-      });
-    }
-
-    next();
-  };
-};
-export const requireAdmin = requirePermissions(Permissoes.admin);
-
-export const hasPermission = (req: Request, permissao: Permissoes): boolean => {
-  const permissoes = req.auth?.permissoes || [];
-  return (
-    permissoes.includes(Permissoes.admin) || permissoes.includes(permissao)
-  );
-};
-export const hasAllPermissions = (
+export const requireSuperAdmin = (
   req: Request,
-  ...permissoesNecessarias: Permissoes[]
-): boolean => {
-  const permissoes = req.auth?.permissoes || [];
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.auth) {
+    return res.status(401).json({
+      error: "Usuário não autenticado",
+      success: false,
+      code: "NOT_AUTHENTICATED",
+    });
+  }
 
-  if (permissoes.includes(Permissoes.admin)) return true;
+  if (!req.auth.isSuperAdmin) {
+    return res.status(403).json({
+      error: "Acesso negado. Apenas super administradores.",
+      success: false,
+      code: "SUPER_ADMIN_REQUIRED",
+    });
+  }
 
-  return permissoesNecessarias.every((p) => permissoes.includes(p));
+  next();
 };

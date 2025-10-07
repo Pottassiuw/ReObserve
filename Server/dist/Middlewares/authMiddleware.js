@@ -18,6 +18,7 @@ const authSession = async (req, res, next) => {
                 code: "NO_TOKEN",
             });
         }
+        console.log(token);
         let decoded;
         try {
             decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET || "your-secret-key");
