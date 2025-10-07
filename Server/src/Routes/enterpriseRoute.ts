@@ -16,12 +16,10 @@ const router = Router();
 router.post("/auth/register", criarEmpresa);
 router.post("/auth/login", loginEmpresa);
 router.post("/auth/logout", authSession, logoutEmpresa);
-router.get("/", retornarEmpresas);
-router.get("/:id", retornarEmpresasId);
-
+router.get("/", authSession, retornarEmpresas);
+router.get("/:id", authSession, retornarEmpresasId);
 //Deletar todos os usuários da empresa
 router.delete("/:id/users/delete/", authSession, deletarTodosUsuariosEmpresa);
 //Deltar usuário específico da empresa
 router.delete("/:id/users/delete/:userId", authSession, deletarUsuario);
-
 export default router;

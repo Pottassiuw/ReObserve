@@ -10,7 +10,7 @@ interface payload {
 
 export const criarPeriodo = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response | void> => {
   try {
     const empresaId = req.auth!.enterprise?.id;
@@ -38,7 +38,6 @@ export const criarPeriodo = async (
         error: "Os ids não foram enviados ou não estão em formato de ARRAY!",
       });
     }
-
     const periodo = await prisma.periodo.create({
       data: {
         dataInicio,
@@ -66,13 +65,12 @@ export const criarPeriodo = async (
     });
   }
 };
-
 export const removerPeriodo = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response> => {
   try {
-    const { periodoId } = req.body;
+    const { periodoId } = req.params;
     const id = parseInt(periodoId);
     if (!id) {
       return res.status(400).json({
@@ -82,7 +80,6 @@ export const removerPeriodo = async (
         success: false,
       });
     }
-
     await prisma.periodo.delete({ where: { id } });
     return res.status(200).json({
       code: "PERIOD_DELETED",

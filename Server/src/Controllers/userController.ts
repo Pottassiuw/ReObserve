@@ -29,19 +29,19 @@ export const retornarUsuarios = async (req: Request, res: Response) => {
       code: "ALL_USERS",
       users: user,
     });
-  } catch (error) {
-    console.error("Erro no servidor:", error);
+  } catch (error: any) {
+    console.error("Erro ao buscar lançamento:", error);
     return res.status(500).json({
-      error: "Erro interno do servidor",
       success: false,
-      code: "INTERNAL_SERVER_ERROR",
+      error: "INTERNAL_ERROR",
+      message: error.message,
     });
   }
 };
 
 export const retornarUsuarioId = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response | void> => {
   try {
     const idParam = req.params.id;
@@ -102,7 +102,7 @@ export const retornarUsuarioId = async (
 
 export const atualizarDados = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response | void> => {
   try {
     const { email, senha, nome }: AtualizarUsuarioInput = req.body;

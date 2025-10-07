@@ -7,14 +7,14 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "serve": "pnpm prisma generate && pnpm tsc -w & nodemon dist/server.js",
     "preserve": "pnpm build",
-    "start": "tsx watch src/server.ts",
+    "start": "tsx watch src/index.ts",
     "build": "rimraf dist && pnpm exec tsc",
     "prestart": "pnpm build"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.17.1",
+  "packageManager": "pnpm@10.18.1",
   "dependencies": {
     "@prisma/client": "^6.16.2",
     "@supabase/supabase-js": "^2.58.0",

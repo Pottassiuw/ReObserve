@@ -27,7 +27,7 @@ interface JWTPayload {
 export const authSession = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const token = req.cookies["auth-token"];
@@ -44,7 +44,7 @@ export const authSession = async (
     try {
       decoded = jwt.verify(
         token,
-        process.env.JWT_SECRET || "your-secret-key"
+        process.env.JWT_SECRET || "your-secret-key",
       ) as JWTPayload;
     } catch (jwtError: any) {
       if (jwtError.name === "TokenExpiredError") {
@@ -157,7 +157,7 @@ export const requirePermissions = (...permissoes: Permissoes[]) => {
 export const requireSuperAdmin = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   if (!req.auth) {
     return res.status(401).json({
