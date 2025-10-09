@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../Database/prisma/prisma";
-import { CreateGroupRequest } from "../../../shared/@types/types";
+import { CreateGroupRequest } from "../@types/types";
 import { Permissoes } from "../generated/prisma";
 
 export const CriarGrupo = async (req: Request, res: Response) => {

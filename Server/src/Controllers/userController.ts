@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../Database/prisma/prisma";
-import { AtualizarUsuarioInput } from "../../../shared/schemas/userSchemas";
+import { AtualizarUsuarioInput } from "../libs/userSchemas";
 
 type userUpdatePayload = {
   nome?: string;

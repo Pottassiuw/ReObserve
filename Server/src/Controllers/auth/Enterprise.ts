@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import { AuthService } from "../../Helpers/authservice";
 import prisma from "../../Database/prisma/prisma";
-import type { EnterprisePayloadLogin } from "../../../../shared/@types/types";
+import type { EnterprisePayloadLogin } from "../../@types/types";
 import bcrypt from "bcrypt";
 import { z } from "zod";
 import {
   CriarEmpresaInput,
   criarEmpresaSchema,
-} from "../../../../shared/schemas/enterpriseSchemas";
+} from "../../libs/enterpriseSchemas";
 
 const criarEmpresa = async (req: Request, res: Response) => {
   try {

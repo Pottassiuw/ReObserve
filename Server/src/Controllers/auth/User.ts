@@ -1,13 +1,10 @@
 import { Request, Response } from "express";
 import { AuthService } from "../../Helpers/authservice";
 import prisma from "../../Database/prisma/prisma";
-import { UserPayloadLogin } from "../../../../shared/@types/types";
+import { UserPayloadLogin } from "../../@types/types";
 import bcrypt from "bcrypt";
 import { z } from "zod";
-import {
-  criarUsuarioInput,
-  criarUsuarioSchema,
-} from "../../../../shared/schemas/userSchemas";
+import { criarUsuarioInput, criarUsuarioSchema } from "../../libs/userSchemas";
 
 const criarUsuario = async (req: Request, res: Response) => {
   try {
