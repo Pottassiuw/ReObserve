@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../Database/prisma/prisma";
-import { CreateGroupRequest } from "../@types/types";
+import { CreateGroupRequest } from "../../../shared/@types/types";
 import { Permissoes } from "../generated/prisma";
 
 export const CriarGrupo = async (req: Request, res: Response) => {
@@ -26,7 +26,7 @@ export const CriarGrupo = async (req: Request, res: Response) => {
 
     const permissoesValidas = Object.values(Permissoes);
     const permissoesInvalidas = permissoes.filter(
-      (p) => !permissoesValidas.includes(p)
+      (p) => !permissoesValidas.includes(p),
     );
 
     if (permissoesInvalidas.length > 0) {
@@ -175,7 +175,7 @@ export const deletarGrupoEmpresa = async (req: Request, res: Response) => {
 
 export const deletarTodosGruposEmpresa = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
     const enterpriseId = req.auth!.enterprise!.id;

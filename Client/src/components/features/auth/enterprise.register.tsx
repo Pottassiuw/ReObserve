@@ -3,35 +3,15 @@ import { Building2, Lock, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  criarEmpresaSchema,
+  type CriarEmpresaInput,
+} from "../../../../../shared/schemas/enterpriseSchemas";
 
 // Simulando Zod (não temos acesso real ao Zod, mas a estrutura está pronta)
-const empresaSchema = {
-  cnpj: (value: string) => {
-    const cleaned = value.replace(/\D/g, "");
-    if (cleaned.length !== 14) return "CNPJ deve ter 14 dígitos";
-    return null;
-  },
-  senha: (value: string) => {
-    if (value.length < 8) return "Senha deve ter no mínimo 8 caracteres";
-    if (!/[A-Z]/.test(value)) return "Senha deve conter letra maiúscula";
-    if (!/[a-z]/.test(value)) return "Senha deve conter letra minúscula";
-    if (!/[0-9]/.test(value)) return "Senha deve conter número";
-    return null;
-  },
-  nomeFantasia: (value: string) => {
-    if (value.length < 3)
-      return "Nome fantasia deve ter no mínimo 3 caracteres";
-    return null;
-  },
-  razaoSocial: (value: string) => {
-    if (value.length < 3) return "Razão social deve ter no mínimo 3 caracteres";
-    return null;
-  },
-  endereco: (value: string) => {
-    if (value.length < 10) return "Endereço deve ser mais detalhado";
-    return null;
-  },
-};
 
 function Register() {
   const [step, setStep] = useState(1);
@@ -78,10 +58,10 @@ function Register() {
     const newErrors: Record<string, string> = {};
 
     if (currentStep === 1) {
-      const cnpjError = empresaSchema.cnpj(formData.cnpj);
+      const cnpjError = criarEmpresaSchema.cnpj(formData.cnpj);
       if (cnpjError) newErrors.cnpj = cnpjError;
 
-      const senhaError = empresaSchema.senha(formData.senha);
+      const senhaError = criarEmpresaSchema.senha(formData.senha);
       if (senhaError) newErrors.senha = senhaError;
 
       if (formData.senha !== formData.confirmSenha) {
@@ -90,10 +70,10 @@ function Register() {
     }
 
     if (currentStep === 2) {
-      const nomeError = empresaSchema.nomeFantasia(formData.nomeFantasia);
+      const nomeError = criarEmpresaSchema.nomeFantasia(formData.nomeFantasia);
       if (nomeError) newErrors.nomeFantasia = nomeError;
 
-      const razaoError = empresaSchema.razaoSocial(formData.razaoSocial);
+      const razaoError = criarEmpresaSchema.razaoSocial(formData.razaoSocial);
       if (razaoError) newErrors.razaoSocial = razaoError;
 
       if (!formData.naturezaJuridica) {
@@ -102,7 +82,7 @@ function Register() {
     }
 
     if (currentStep === 3) {
-      const enderecoError = empresaSchema.endereco(formData.endereco);
+      const enderecoError = criarEmpresaSchema.endereco(formData.endereco);
       if (enderecoError) newErrors.endereco = enderecoError;
 
       if (!formData.CNAES) {
