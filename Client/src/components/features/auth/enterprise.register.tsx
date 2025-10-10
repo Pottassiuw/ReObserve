@@ -9,27 +9,22 @@ import { z } from "zod";
 import {
   criarEmpresaSchema,
   type CriarEmpresaInput,
-} from "../../../../../shared/schemas/enterpriseSchemas";
-
-// Simulando Zod (não temos acesso real ao Zod, mas a estrutura está pronta)
+} from "@/lib/enterpriseSchemas";
 
 function Register() {
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [formData, setFormData] = useState({
-    cnpj: "",
-    senha: "",
-    confirmSenha: "",
-    nomeFantasia: "",
-    razaoSocial: "",
-    endereco: "",
-    situacaoCadastral: "Ativa",
-    naturezaJuridica: "",
-    CNAES: "",
+  const {
+    register,
+    isSubmitted,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+  } = useForm<CriarEmpresaInput>({
+    resolver: zodResolver(criarEmpresaSchema),
   });
 
   const formatCNPJ = (value: string) => {
@@ -44,72 +39,16 @@ function Register() {
     return value;
   };
 
-  const handleChange = (field: string, value: string) => {
-    if (field === "cnpj") {
-      value = formatCNPJ(value);
-    }
-    setFormData({ ...formData, [field]: value });
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: "" });
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCNPJ = formatCNPJ(e.target.value);
+    setValue("cnpj", formattedCNPJ, { shouldValidate: true });
   };
-
-  const validateStep = (currentStep: number) => {
-    const newErrors: Record<string, string> = {};
-
-    if (currentStep === 1) {
-      const cnpjError = criarEmpresaSchema.cnpj(formData.cnpj);
-      if (cnpjError) newErrors.cnpj = cnpjError;
-
-      const senhaError = criarEmpresaSchema.senha(formData.senha);
-      if (senhaError) newErrors.senha = senhaError;
-
-      if (formData.senha !== formData.confirmSenha) {
-        newErrors.confirmSenha = "As senhas não coincidem";
-      }
-    }
-
-    if (currentStep === 2) {
-      const nomeError = criarEmpresaSchema.nomeFantasia(formData.nomeFantasia);
-      if (nomeError) newErrors.nomeFantasia = nomeError;
-
-      const razaoError = criarEmpresaSchema.razaoSocial(formData.razaoSocial);
-      if (razaoError) newErrors.razaoSocial = razaoError;
-
-      if (!formData.naturezaJuridica) {
-        newErrors.naturezaJuridica = "Selecione a natureza jurídica";
-      }
-    }
-
-    if (currentStep === 3) {
-      const enderecoError = criarEmpresaSchema.endereco(formData.endereco);
-      if (enderecoError) newErrors.endereco = enderecoError;
-
-      if (!formData.CNAES) {
-        newErrors.CNAES = "Informe pelo menos um CNAE";
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
+  //criar lógica de voltar
   const handleNext = () => {
-    if (validateStep(step)) {
-      setStep(step + 1);
-    }
+    setStep(step + 1);
   };
 
-  const handleSubmit = () => {
-    if (validateStep(step)) {
-      setIsLoading(true);
-      setTimeout(() => {
-        setIsLoading(false);
-        console.log("Empresa cadastrada:", formData);
-      }, 2000);
-    }
-  };
-
+  //validar os steps para errors
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-6">
       <div className="w-full max-w-2xl">

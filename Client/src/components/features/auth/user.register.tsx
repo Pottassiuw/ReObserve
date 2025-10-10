@@ -4,18 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import {
-  criarUsuarioSchema,
-  type criarUsuarioInput,
-} from "../../../../../shared/schemas/userSchemas";
+import { criarUsuarioSchema, type criarUsuarioInput } from "@/lib/userSchemas";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-// Tipo estendido para incluir confirmação de senha
-type FormData = Omit<criarUsuarioInput, "empresaId" | "grupoId"> & {
-  confirmSenha: string;
-};
 
 // Schema estendido para validação de senhas do formulário
 const formSchema = criarUsuarioSchema
@@ -27,12 +19,11 @@ const formSchema = criarUsuarioSchema
     message: "As senhas não coincidem",
     path: ["confirmSenha"],
   });
-
+type FormData = z.infer<typeof formSchema>;
 function UserRegister() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
   const navigate = useNavigate();
   const goToHome = () => navigate("/");
 
@@ -53,7 +44,6 @@ function UserRegister() {
     },
   });
 
-  // ... restante do código ...
   const formatCPF = (value: string) => {
     const cleaned = value.replace(/\D/g, "");
     if (cleaned.length <= 11) {
@@ -74,31 +64,24 @@ function UserRegister() {
     try {
       setIsLoading(true);
 
-      // Remove formatação do CPF antes de enviar
-      const cpfLimpo = data.cpf.replace(/\D/g, "");
-
       // Prepara dados para envio (remove confirmSenha e adiciona empresaId)
       const dadosEnvio: criarUsuarioInput = {
         nome: data.nome,
-        cpf: cpfLimpo,
+        cpf: data.cpf,
         senha: data.senha,
         email: data.email,
         empresaId: 1, // TODO: Pegar o ID da empresa do contexto/estado global
         // grupoId é opcional, então não precisa ser enviado
       };
 
-      // TODO: Implementar chamada à API
       console.log("Dados para envio:", dadosEnvio);
 
-      // Simula requisição
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // TODO: Tratar resposta e redirecionar
       alert("Usuário cadastrado com sucesso!");
       navigate("/");
     } catch (error) {
       console.error("Erro ao cadastrar usuário:", error);
-      // TODO: Mostrar mensagem de erro apropriada
     } finally {
       setIsLoading(false);
     }
@@ -161,6 +144,7 @@ function UserRegister() {
                     value={watch("cpf")}
                     placeholder="000.000.000-00"
                     maxLength={14}
+                    minLength={14}
                     className="pl-10 py-5 rounded-xl"
                   />
                 </div>
