@@ -2,7 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import homeHeaderImage from "@/assets/homeHeader.jpg";
 import { Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 export default function Home() {
+  const navigate = useNavigate();
   return (
     <main className="flex flex-col min-h-screen bg-white text-gray-900">
       {/* Hero Section*/}
@@ -33,6 +35,7 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
             <Button
+              onClick={() => navigate("/releases")}
               className="relative bg-indigo-500 hover:bg-indigo-600 text-white text-lg px-8 py-6 rounded-xl shadow-md transition-all
                       hover:cursor-pointer "
             >

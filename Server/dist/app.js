@@ -8,8 +8,15 @@ const userRoutes_1 = __importDefault(require("./Routes/userRoutes"));
 const enterpriseRoute_1 = __importDefault(require("./Routes/enterpriseRoute"));
 const groupRoutes_1 = __importDefault(require("./Routes/groupRoutes"));
 const releaseRoute_1 = __importDefault(require("./Routes/releaseRoute"));
+const cors_1 = __importDefault(require("cors"));
 const adminRoutes_1 = __importDefault(require("./Routes/adminRoutes"));
 const app = (0, express_1.default)();
+const corsOptions = {
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+    optionsSuccessStatus: 200,
+};
+app.use((0, cors_1.default)(corsOptions));
 app.use(express_1.default.json());
 // rotas
 app.use("/users", userRoutes_1.default);

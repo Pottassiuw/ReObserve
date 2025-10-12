@@ -5,7 +5,7 @@ const zod_1 = require("zod");
 // Função auxiliar para validar CNPJ
 function isValidCNPJ(cnpj) {
     // Remove formatação (pontos, barras, hífens)
-    cnpj = cnpj.replace(/[^\d]+/g, '');
+    cnpj = cnpj.replace(/[^\d]+/g, "");
     // Verifica se tem 14 dígitos
     if (cnpj.length !== 14)
         return false;
@@ -23,7 +23,7 @@ function isValidCNPJ(cnpj) {
         if (pos < 2)
             pos = 9;
     }
-    let resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
+    let resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
     if (resultado != parseInt(digitos.charAt(0)))
         return false;
     tamanho = tamanho + 1;
@@ -35,7 +35,7 @@ function isValidCNPJ(cnpj) {
         if (pos < 2)
             pos = 9;
     }
-    resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
+    resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
     if (resultado != parseInt(digitos.charAt(1)))
         return false;
     return true;
@@ -45,7 +45,7 @@ exports.criarEmpresaSchema = zod_1.z.object({
     cnpj: zod_1.z
         .string()
         .min(1, "CNPJ é obrigatório")
-        .transform((val) => val.replace(/[^\d]+/g, '')) // Remove formatação
+        .transform((val) => val.replace(/[^\d]+/g, "")) // Remove formatação
         .refine((val) => val.length === 14, "CNPJ deve ter 14 dígitos")
         .refine((val) => isValidCNPJ(val), "CNPJ inválido"),
     senha: zod_1.z
@@ -55,7 +55,7 @@ exports.criarEmpresaSchema = zod_1.z.object({
     nomeFantasia: zod_1.z
         .string()
         .optional()
-        .transform((val) => val === "" ? undefined : val), // Converte string vazia para undefined
+        .transform((val) => (val === "" ? undefined : val)), // Converte string vazia para undefined
     razaoSocial: zod_1.z
         .string()
         .min(1, "Razão social é obrigatória")
@@ -75,9 +75,9 @@ exports.criarEmpresaSchema = zod_1.z.object({
     CNAES: zod_1.z
         .string()
         .min(1, "CNAE é obrigatório")
-        .max(500, "CNAE deve ter no máximo 500 caracteres")
+        .max(500, "CNAE deve ter no máximo 500 caracteres"),
 });
 // Schema para atualização (campos opcionais)
 exports.atualizarEmpresaSchema = exports.criarEmpresaSchema.partial().omit({
-    cnpj: true // CNPJ não pode ser alterado
+    cnpj: true, // CNPJ não pode ser alterado
 });

@@ -58,7 +58,7 @@ const criarPeriodo = async (req, res) => {
 exports.criarPeriodo = criarPeriodo;
 const removerPeriodo = async (req, res) => {
     try {
-        const { periodoId } = req.body;
+        const { periodoId } = req.params;
         const id = parseInt(periodoId);
         if (!id) {
             return res.status(400).json({

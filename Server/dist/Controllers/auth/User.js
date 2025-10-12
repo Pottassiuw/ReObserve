@@ -8,7 +8,7 @@ const authservice_1 = require("../../Helpers/authservice");
 const prisma_1 = __importDefault(require("../../Database/prisma/prisma"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const zod_1 = require("zod");
-const userSchemas_1 = require("../../Schemas/userSchemas");
+const userSchemas_1 = require("../../libs/userSchemas");
 const criarUsuario = async (req, res) => {
     try {
         const validatedUserData = userSchemas_1.criarUsuarioSchema.parse(req.body);
@@ -20,8 +20,8 @@ const criarUsuario = async (req, res) => {
                 email: validatedUserData.email,
                 cpf: validatedUserData.cpf,
                 empresaId: validatedUserData.empresaId,
-                grupoId: validatedUserData.grupoId
-            }
+                grupoId: validatedUserData.grupoId,
+            },
         });
         const { senha: _, ...userResponse } = user;
         return res.status(200).json({
@@ -37,23 +37,26 @@ const criarUsuario = async (req, res) => {
                 success: false,
                 message: "Dados inválidos",
                 errors: error.issues.map((err) => ({
-                    field: err.path.join('.'),
-                    message: err.message
-                }))
+                    field: err.path.join("."),
+                    message: err.message,
+                })),
             });
         }
         // Erro de constraint unique do Prisma (CPF duplicado)
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        if (error &&
+            typeof error === "object" &&
+            "code" in error &&
+            error.code === "P2002") {
             return res.status(409).json({
                 success: false,
-                message: "CPF já está cadastrado"
+                message: "CPF já está cadastrado",
             });
         }
         // Erro genérico
-        console.error('Erro ao criar Usuário:', error);
+        console.error("Erro ao criar Usuário:", error);
         return res.status(500).json({
             success: false,
-            message: "Erro interno do servidor"
+            message: "Erro interno do servidor",
         });
     }
 };

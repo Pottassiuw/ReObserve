@@ -1,10 +1,11 @@
 import { createBrowserRouter } from "react-router-dom";
 import Home from "@/pages/home";
 import App from "@/App";
-import UserLogin from "@/components/features/auth/user.login";
-import EnterpriseLogin from "@/components/features/auth/enterprise.login";
-import EnterpriseRegister from "@/components/features/auth/enterprise.register";
-import UserRegister from "@/components/features/auth/user.register";
+import UserLogin from "@/pages/user/user.login";
+import EnterpriseLogin from "@/pages/enterprise/enterprise.login";
+import EnterpriseRegister from "@/pages/enterprise/enterprise.register";
+import Release from "@/pages/release";
+import DashboardLayout from "@/layout/dashboardLayout";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -15,7 +16,10 @@ export const router = createBrowserRouter([
       { path: "/user/login", element: <UserLogin /> },
       { path: "/enterprise/login", element: <EnterpriseLogin /> },
       { path: "/enterprise/register", element: <EnterpriseRegister /> },
-      { path: "/user/register", element: <UserRegister /> },
+      {
+        element: <DashboardLayout />,
+        children: [{ index: true, path: "/releases", element: <Release /> }],
+      },
     ],
   },
 ]);

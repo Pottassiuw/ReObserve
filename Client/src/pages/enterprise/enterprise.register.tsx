@@ -10,45 +10,99 @@ import {
   criarEmpresaSchema,
   type CriarEmpresaInput,
 } from "@/lib/enterpriseSchemas";
-
+import { formatCNPJ } from "@/utils/formatters";
+import client from "@/api/client";
+import { toast } from "sonner";
 function Register() {
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  //Schema extendido para validação de senhas do formulário
+  const formSchema = criarEmpresaSchema
+    .extend({
+      confirmSenha: z.string().min(1, "Por favor, confirme sua senha"),
+    })
+    .refine((data) => data.senha === data.confirmSenha, {
+      message: "As senhas não coincidem",
+      path: ["confirmSenha"],
+    });
+  type FormData = z.infer<typeof formSchema>;
   const {
     register,
-    isSubmitted,
     handleSubmit,
     formState: { errors },
+    watch,
     setValue,
-  } = useForm<CriarEmpresaInput>({
-    resolver: zodResolver(criarEmpresaSchema),
+    trigger,
+  } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    mode: "onChange",
   });
 
-  const formatCNPJ = (value: string) => {
-    const cleaned = value.replace(/\D/g, "");
-    if (cleaned.length <= 14) {
-      return cleaned
-        .replace(/(\d{2})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1/$2")
-        .replace(/(\d{4})(\d)/, "$1-$2");
-    }
-    return value;
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedCNPJ = formatCNPJ(e.target.value);
     setValue("cnpj", formattedCNPJ, { shouldValidate: true });
   };
-  //criar lógica de voltar
-  const handleNext = () => {
-    setStep(step + 1);
+
+  const ValidateStep = async (currentStep: number) => {
+    let fieldsToValidate: (keyof FormData)[] = [];
+
+    switch (currentStep) {
+      case 1:
+        fieldsToValidate = ["cnpj", "senha", "confirmSenha"];
+        break;
+      case 2:
+        fieldsToValidate = ["nomeFantasia", "razaoSocial", "naturezaJuridica"];
+        break;
+      case 3:
+        fieldsToValidate = ["endereco", "CNAES", "situacaoCadastral"];
+        break;
+    }
+    const isValid = await trigger(fieldsToValidate);
+    return isValid;
   };
 
-  //validar os steps para errors
+  const handleNext = async () => {
+    const isStepValid = await ValidateStep(step);
+    if (isStepValid) {
+      setStep(step + 1);
+    }
+  };
+  const onSubmit = async (data: CriarEmpresaInput) => {
+    try {
+      setIsLoading(true);
+      const {
+        cnpj,
+        senha,
+        nomeFantasia,
+        razaoSocial,
+        naturezaJuridica,
+        endereco,
+        situacaoCadastral,
+        CNAES,
+      } = data;
+      const empresa = await client.post("/enterprises/auth/register", {
+        cnpj,
+        senha,
+        nomeFantasia,
+        razaoSocial,
+        naturezaJuridica,
+        endereco,
+        situacaoCadastral,
+        CNAES,
+      });
+      if (!empresa) {
+        toast.error("Empresa não cadastrada");
+        setIsLoading(false);
+        return;
+      }
+      toast.success("Empresa cadastrada com sucesso");
+    } catch (error) {
+      console.error(error);
+    }
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-6">
       <div className="w-full max-w-2xl">
@@ -68,7 +122,6 @@ function Register() {
               Preencha os dados da sua empresa para começar
             </p>
           </div>
-
           {/* Progress Steps */}
           <div className="flex items-center justify-center mb-8 max-w-md mx-auto">
             {[1, 2, 3].map((s) => (
@@ -112,15 +165,16 @@ function Register() {
                   <Input
                     id="cnpj"
                     type="text"
-                    value={formData.cnpj}
-                    onChange={(e) => handleChange("cnpj", e.target.value)}
+                    {...register("cnpj")}
+                    value={watch("cnpj")}
+                    onChange={handleCNPJChange}
                     placeholder="00.000.000/0000-00"
                     maxLength={18}
                     className="pl-10 py-6 rounded-xl"
                   />
                 </div>
                 {errors.cnpj && (
-                  <p className="text-sm text-red-500">{errors.cnpj}</p>
+                  <p className="text-sm text-red-500">{errors.cnpj.message}</p>
                 )}
               </div>
 
@@ -132,9 +186,8 @@ function Register() {
                   </div>
                   <Input
                     id="senha"
+                    {...register("senha")}
                     type={showPassword ? "text" : "password"}
-                    value={formData.senha}
-                    onChange={(e) => handleChange("senha", e.target.value)}
                     placeholder="••••••••"
                     className="pl-10 pr-12 py-6 rounded-xl"
                   />
@@ -153,7 +206,7 @@ function Register() {
                   </Button>
                 </div>
                 {errors.senha && (
-                  <p className="text-sm text-red-500">{errors.senha}</p>
+                  <p className="text-sm text-red-500">{errors.senha.message}</p>
                 )}
               </div>
 
@@ -166,10 +219,7 @@ function Register() {
                   <Input
                     id="confirmSenha"
                     type={showConfirmPassword ? "text" : "password"}
-                    value={formData.confirmSenha}
-                    onChange={(e) =>
-                      handleChange("confirmSenha", e.target.value)
-                    }
+                    {...register("confirmSenha")}
                     placeholder="••••••••"
                     className="pl-10 pr-12 py-6 rounded-xl"
                   />
@@ -188,7 +238,9 @@ function Register() {
                   </Button>
                 </div>
                 {errors.confirmSenha && (
-                  <p className="text-sm text-red-500">{errors.confirmSenha}</p>
+                  <p className="text-sm text-red-500">
+                    {errors.confirmSenha.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -202,13 +254,14 @@ function Register() {
                 <Input
                   id="nomeFantasia"
                   type="text"
-                  value={formData.nomeFantasia}
-                  onChange={(e) => handleChange("nomeFantasia", e.target.value)}
                   placeholder="Nome da sua empresa"
+                  {...register("nomeFantasia")}
                   className="py-6 rounded-xl"
                 />
                 {errors.nomeFantasia && (
-                  <p className="text-sm text-red-500">{errors.nomeFantasia}</p>
+                  <p className="text-sm text-red-500">
+                    {errors.nomeFantasia.message}
+                  </p>
                 )}
               </div>
 
@@ -217,13 +270,14 @@ function Register() {
                 <Input
                   id="razaoSocial"
                   type="text"
-                  value={formData.razaoSocial}
-                  onChange={(e) => handleChange("razaoSocial", e.target.value)}
+                  {...register("razaoSocial")}
                   placeholder="Razão social completa"
                   className="py-6 rounded-xl"
                 />
                 {errors.razaoSocial && (
-                  <p className="text-sm text-red-500">{errors.razaoSocial}</p>
+                  <p className="text-sm text-red-500">
+                    {errors.razaoSocial.message}
+                  </p>
                 )}
               </div>
 
@@ -231,10 +285,7 @@ function Register() {
                 <Label htmlFor="naturezaJuridica">Natureza Jurídica</Label>
                 <select
                   id="naturezaJuridica"
-                  value={formData.naturezaJuridica}
-                  onChange={(e) =>
-                    handleChange("naturezaJuridica", e.target.value)
-                  }
+                  {...register("naturezaJuridica")}
                   className="w-full py-3 px-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-900"
                 >
                   <option value="">Selecione...</option>
@@ -250,7 +301,7 @@ function Register() {
                 </select>
                 {errors.naturezaJuridica && (
                   <p className="text-sm text-red-500">
-                    {errors.naturezaJuridica}
+                    {errors.naturezaJuridica.message}
                   </p>
                 )}
               </div>
@@ -265,13 +316,14 @@ function Register() {
                 <Input
                   id="endereco"
                   type="text"
-                  value={formData.endereco}
-                  onChange={(e) => handleChange("endereco", e.target.value)}
+                  {...register("endereco")}
                   placeholder="Rua, número, bairro, cidade - UF"
                   className="py-6 rounded-xl"
                 />
                 {errors.endereco && (
-                  <p className="text-sm text-red-500">{errors.endereco}</p>
+                  <p className="text-sm text-red-500">
+                    {errors.endereco.message}
+                  </p>
                 )}
               </div>
 
@@ -280,13 +332,12 @@ function Register() {
                 <Input
                   id="CNAES"
                   type="text"
-                  value={formData.CNAES}
-                  onChange={(e) => handleChange("CNAES", e.target.value)}
+                  {...register("CNAES")}
                   placeholder="Ex: 6201-5/00, 6203-4/00"
                   className="py-6 rounded-xl"
                 />
                 {errors.CNAES && (
-                  <p className="text-sm text-red-500">{errors.CNAES}</p>
+                  <p className="text-sm text-red-500">{errors.CNAES.message}</p>
                 )}
                 <p className="text-xs text-gray-500">
                   Informe os códigos CNAE da atividade econômica da empresa
@@ -297,10 +348,7 @@ function Register() {
                 <Label htmlFor="situacaoCadastral">Situação Cadastral</Label>
                 <select
                   id="situacaoCadastral"
-                  value={formData.situacaoCadastral}
-                  onChange={(e) =>
-                    handleChange("situacaoCadastral", e.target.value)
-                  }
+                  {...register("situacaoCadastral")}
                   className="w-full py-3 px-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-900"
                 >
                   <option value="Ativa">Ativa</option>
@@ -335,7 +383,7 @@ function Register() {
             ) : (
               <Button
                 type="button"
-                onClick={handleSubmit}
+                onClick={handleSubmit(onSubmit)}
                 disabled={isLoading}
                 className="flex-1 bg-indigo-500 hover:bg-indigo-600 py-6 rounded-xl shadow-md hover:shadow-lg"
               >

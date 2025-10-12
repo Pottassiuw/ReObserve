@@ -8,7 +8,7 @@ const authservice_1 = require("../../Helpers/authservice");
 const prisma_1 = __importDefault(require("../../Database/prisma/prisma"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const zod_1 = require("zod");
-const enterpriseSchemas_1 = require("../../Schemas/enterpriseSchemas");
+const enterpriseSchemas_1 = require("../../libs/enterpriseSchemas");
 const criarEmpresa = async (req, res) => {
     try {
         // Validação dos dados de entrada
@@ -25,15 +25,15 @@ const criarEmpresa = async (req, res) => {
                 endereco: validatedData.endereco,
                 situacaoCadastral: validatedData.situacaoCadastral,
                 naturezaJuridica: validatedData.naturezaJuridica,
-                CNAES: validatedData.CNAES
-            }
+                CNAES: validatedData.CNAES,
+            },
         });
         // Resposta sem retornar a senha
         const { senha: _, ...empresaResponse } = empresa;
         return res.status(201).json({
             success: true,
             data: empresaResponse,
-            message: "Empresa criada com sucesso!"
+            message: "Empresa criada com sucesso!",
         });
     }
     catch (error) {
@@ -45,17 +45,20 @@ const criarEmpresa = async (req, res) => {
             });
         }
         // Erro de constraint unique do Prisma (CNPJ duplicado)
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        if (error &&
+            typeof error === "object" &&
+            "code" in error &&
+            error.code === "P2002") {
             return res.status(409).json({
                 success: false,
-                message: "CNPJ já está cadastrado"
+                message: "CNPJ já está cadastrado",
             });
         }
         // Erro genérico
-        console.error('Erro ao criar empresa:', error);
+        console.error("Erro ao criar empresa:", error);
         return res.status(500).json({
             success: false,
-            message: "Erro interno do servidor"
+            message: "Erro interno do servidor",
         });
     }
 };

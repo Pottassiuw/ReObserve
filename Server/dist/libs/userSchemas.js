@@ -12,7 +12,12 @@ exports.criarUsuarioSchema = zod_1.z.object({
             return false;
         const cpfDigits = cpf.split("").map((el) => +el);
         const rest = (count) => {
-            return (((cpfDigits.slice(0, count - 12).reduce((soma, el, index) => soma + el * (count - index), 0) * 10) % 11) % 10);
+            return (((cpfDigits
+                .slice(0, count - 12)
+                .reduce((soma, el, index) => soma + el * (count - index), 0) *
+                10) %
+                11) %
+                10);
         };
         return rest(10) === cpfDigits[9] && rest(11) === cpfDigits[10];
     }, "Digite um cpf válido."),
@@ -27,5 +32,5 @@ exports.criarUsuarioSchema = zod_1.z.object({
 });
 // Schema para atualização (campos opcionais)
 exports.atualizarUsuarioSchema = exports.criarUsuarioSchema.partial().omit({
-    cpf: true // CPF não pode ser alterado
+    cpf: true, // CPF não pode ser alterado
 });

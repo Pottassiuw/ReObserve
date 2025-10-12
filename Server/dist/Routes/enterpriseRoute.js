@@ -10,8 +10,8 @@ const router = (0, express_1.Router)();
 router.post("/auth/register", Enterprise_1.criarEmpresa);
 router.post("/auth/login", Enterprise_2.loginEmpresa);
 router.post("/auth/logout", authMiddleware_1.authSession, Enterprise_2.logoutEmpresa);
-router.get("/", enterpriseController_1.retornarEmpresas);
-router.get("/:id", enterpriseController_1.retornarEmpresasId);
+router.get("/", authMiddleware_1.authSession, enterpriseController_1.retornarEmpresas);
+router.get("/:id", authMiddleware_1.authSession, enterpriseController_1.retornarEmpresasId);
 //Deletar todos os usuários da empresa
 router.delete("/:id/users/delete/", authMiddleware_1.authSession, enterpriseController_1.deletarTodosUsuariosEmpresa);
 //Deltar usuário específico da empresa

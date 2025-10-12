@@ -4,19 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
-import { useNavigate } from "react-router-dom";
+
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  const navigate = useNavigate();
-
-  const navigateToRegister = () => {
-    navigate("/user/register");
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,26 +122,6 @@ function Login() {
                 "Entrar"
               )}
             </Button>
-          </div>
-
-          <div className="relative my-6">
-            <Separator />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="px-4 bg-white text-gray-500 text-sm">ou</span>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <p className="text-gray-600">
-              Não tem uma conta?{" "}
-              <Button
-                onClick={navigateToRegister}
-                variant="link"
-                className="text-indigo-500 hover:text-indigo-600 p-0 h-auto font-semibold hover:cursor-pointer"
-              >
-                Criar conta
-              </Button>
-            </p>
           </div>
         </div>
 

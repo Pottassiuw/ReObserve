@@ -28,11 +28,11 @@ const retornarUsuarios = async (req, res) => {
         });
     }
     catch (error) {
-        console.error("Erro no servidor:", error);
+        console.error("Erro ao buscar lançamento:", error);
         return res.status(500).json({
-            error: "Erro interno do servidor",
             success: false,
-            code: "INTERNAL_SERVER_ERROR",
+            error: "INTERNAL_ERROR",
+            message: error.message,
         });
     }
 };

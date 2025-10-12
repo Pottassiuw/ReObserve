@@ -4,15 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = __importDefault(require("dotenv"));
-const app_1 = __importDefault(require("./app"));
-const cors_1 = __importDefault(require("cors"));
 dotenv_1.default.config();
-const corsOptions = {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    credentials: true,
-    optionsSuccessStatus: 200,
-};
-app_1.default.use((0, cors_1.default)(corsOptions));
+const app_1 = __importDefault(require("./app"));
 const port = process.env.PORT || 8000;
 app_1.default.listen(port, () => {
     console.log(`Escutando a porta ${port}`);
