@@ -5,6 +5,7 @@ import groupRoutes from "./Routes/groupRoutes";
 import releaseRoutes from "./Routes/releaseRoute";
 import cors from "cors";
 import adminRoutes from "./Routes/adminRoutes";
+import cookieParser from "cookie-parser";
 
 const app = express();
 const corsOptions = {
@@ -12,6 +13,7 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
 };
+app.use(cookieParser());
 app.use(cors(corsOptions));
 app.use(express.json());
 // rotas

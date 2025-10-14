@@ -3,10 +3,12 @@ import { Separator } from "@/components/ui/separator";
 import homeHeaderImage from "@/assets/homeHeader.jpg";
 import { Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Navbar from "@/components/navbar";
 export default function Home() {
   const navigate = useNavigate();
   return (
     <main className="flex flex-col min-h-screen bg-white text-gray-900">
+      <Navbar />
       {/* Hero Section*/}
       <section className="relative w-full h-[80vh] flex items-center justify-center overflow-hidden">
         {/* Background image */}
@@ -35,7 +37,7 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
             <Button
-              onClick={() => navigate("/releases")}
+              onClick={() => navigate("/dashboard")}
               className="relative bg-indigo-500 hover:bg-indigo-600 text-white text-lg px-8 py-6 rounded-xl shadow-md transition-all
                       hover:cursor-pointer "
             >
