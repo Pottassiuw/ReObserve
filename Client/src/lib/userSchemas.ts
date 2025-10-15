@@ -38,3 +38,10 @@ export const atualizarUsuarioSchema = criarUsuarioSchema.partial().omit({
   cpf: true, // CPF não pode ser alterado
 });
 export type AtualizarUsuarioInput = z.infer<typeof atualizarUsuarioSchema>;
+
+export const LoginUsuarioSchema = z.object({
+  email: z.string().email({ message: "Por favor, insira um email válido!" }),
+  senha: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
+});
+
+export type LoginUsuarioInput = z.infer<typeof LoginUsuarioSchema>;

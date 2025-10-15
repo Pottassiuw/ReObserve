@@ -4,6 +4,7 @@ export interface Usuario {
   senha: string;
   nome: string;
   email: string;
+  isAdmin: boolean | null;
   empresaId: number;
 }
 export interface Empresa {

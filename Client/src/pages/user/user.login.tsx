@@ -5,21 +5,45 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import Navbar from "@/components/navbar";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { LoginUsuarioSchema, type LoginUsuarioInput } from "@/lib/userSchemas";
+import { useAuthStore } from "@/store/authStore";
+import { toast } from "sonner";
+import { useAppNavigator } from "@/hooks/navigate";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const { login } = useAuthStore();
+  const { navigateToDashboard } = useAppNavigator();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginUsuarioInput>({
+    resolver: zodResolver(LoginUsuarioSchema),
+  });
+  const onSubmit = async (data: LoginUsuarioInput) => {
     setIsLoading(true);
-
-    setTimeout(() => {
+    const loadingToastId = toast.loading("Logando usuário...");
+    try {
+      await login("user", data);
+      toast.success("Usuário logado com sucesso!", {
+        id: loadingToastId,
+        duration: 2000,
+      });
+      navigateToDashboard();
+    } catch (error: any) {
+      toast.error("Erro ao logar usuário!", {
+        id: loadingToastId,
+        description: error?.message || "Ocorreu um erro desconhecido.",
+        duration: 5000,
+      });
+      console.error(error);
+    } finally {
       setIsLoading(false);
-      console.log("Login realizado:", { email, password });
-    }, 1500);
+    }
   };
   return (
     <main>
@@ -53,12 +77,16 @@ export default function Login() {
                   <Input
                     id="email"
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    {...register("email")}
                     placeholder="seu@email.com"
                     className="pl-10 py-6 rounded-xl"
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -69,9 +97,8 @@ export default function Login() {
                   </div>
                   <Input
                     id="password"
+                    {...register("senha")}
                     type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     className="pl-10 pr-12 py-6 rounded-xl"
                   />
@@ -89,6 +116,11 @@ export default function Login() {
                     )}
                   </Button>
                 </div>
+                {errors.senha && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.senha.message}
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-between text-sm">
@@ -111,7 +143,7 @@ export default function Login() {
 
               <Button
                 type="button"
-                onClick={handleSubmit}
+                onClick={handleSubmit(onSubmit)}
                 disabled={isLoading}
                 className="w-full bg-indigo-500 hover:bg-indigo-600 py-6 rounded-xl shadow-md hover:shadow-lg"
               >

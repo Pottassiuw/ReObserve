@@ -88,3 +88,10 @@ export const atualizarEmpresaSchema = criarEmpresaSchema.partial().omit({
 });
 
 export type AtualizarEmpresaInput = z.infer<typeof atualizarEmpresaSchema>;
+
+export const LoginEmpresaSchema = z.object({
+  email: z.string().email({ message: "Por favor, insira um email válido!" }),
+  senha: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
+});
+
+export type LoginEmpresaInput = z.infer<typeof LoginEmpresaSchema>;

@@ -15,7 +15,10 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo e Nome */}
-          <div className="flex items-center gap-3">
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => navigate("/")}
+          >
             <img src={Logo} alt="Logo" className="h-10 w-10" />
             <div className="flex flex-col">
               <span className="text-xl font-bold text-indigo-900">

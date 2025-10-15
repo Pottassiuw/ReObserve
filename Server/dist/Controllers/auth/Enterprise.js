@@ -96,7 +96,6 @@ const loginEmpresa = async (req, res) => {
         }
         const token = authservice_1.AuthService.generateToken("enterprise", empresa.id);
         res.cookie("auth-token", token, {
-            httpOnly: true,
             maxAge: 1000 * 60 * 60 * 24 * 7, // 7 Dias
             sameSite: "strict",
         });
@@ -124,7 +123,6 @@ exports.loginEmpresa = loginEmpresa;
 const logoutEmpresa = async (req, res) => {
     try {
         res.clearCookie("auth-token", {
-            httpOnly: true,
             sameSite: "strict",
         });
         return res.status(200).json({

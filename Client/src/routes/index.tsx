@@ -10,6 +10,7 @@ import Dashboard from "@/pages/dashboard";
 import UserSettingsPage from "@/pages/user/user.config";
 import CreatePeriodPage from "@/pages/features/create.period";
 import PageNotFound from "@/pages/notFound";
+import ProtectedRoute from "./protectedRoutes";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -21,7 +22,11 @@ export const router = createBrowserRouter([
       { path: "/enterprise/login", element: <EnterpriseLogin /> },
       { path: "/enterprise/register", element: <EnterpriseRegister /> },
       {
-        element: <DashboardLayout />,
+        element: (
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        ),
         children: [
           { index: true, path: "/dashboard", element: <Dashboard /> },
           { path: "/features/release/new", element: <Release /> },
