@@ -8,11 +8,11 @@ const authservice_1 = require("../../Helpers/authservice");
 const prisma_1 = __importDefault(require("../../Database/prisma/prisma"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const zod_1 = require("zod");
-const enterPriseSchemas_1 = require("../../Schemas/enterPriseSchemas");
+const enterpriseSchemas_1 = require("../../libs/enterpriseSchemas");
 const criarEmpresa = async (req, res) => {
     try {
         // Validação dos dados de entrada
-        const validatedData = enterPriseSchemas_1.criarEmpresaSchema.parse(req.body);
+        const validatedData = enterpriseSchemas_1.criarEmpresaSchema.parse(req.body);
         // Hash da senha
         const hashedPassword = await bcrypt_1.default.hash(validatedData.senha, 12);
         // Criação da empresa
@@ -25,15 +25,15 @@ const criarEmpresa = async (req, res) => {
                 endereco: validatedData.endereco,
                 situacaoCadastral: validatedData.situacaoCadastral,
                 naturezaJuridica: validatedData.naturezaJuridica,
-                CNAES: validatedData.CNAES
-            }
+                CNAES: validatedData.CNAES,
+            },
         });
         // Resposta sem retornar a senha
         const { senha: _, ...empresaResponse } = empresa;
         return res.status(201).json({
             success: true,
             data: empresaResponse,
-            message: "Empresa criada com sucesso!"
+            message: "Empresa criada com sucesso!",
         });
     }
     catch (error) {
@@ -45,17 +45,20 @@ const criarEmpresa = async (req, res) => {
             });
         }
         // Erro de constraint unique do Prisma (CNPJ duplicado)
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        if (error &&
+            typeof error === "object" &&
+            "code" in error &&
+            error.code === "P2002") {
             return res.status(409).json({
                 success: false,
-                message: "CNPJ já está cadastrado"
+                message: "CNPJ já está cadastrado",
             });
         }
         // Erro genérico
-        console.error('Erro ao criar empresa:', error);
+        console.error("Erro ao criar empresa:", error);
         return res.status(500).json({
             success: false,
-            message: "Erro interno do servidor"
+            message: "Erro interno do servidor",
         });
     }
 };
@@ -74,7 +77,6 @@ const loginEmpresa = async (req, res) => {
         const empresa = await prisma_1.default.empresa.findUnique({
             where: { cnpj: cnpjFiltrado },
         });
-        console.log("CREDENCIAIS DA EMPRESA:", empresa);
         if (!empresa) {
             return res.status(401).json({
                 success: false,
@@ -92,19 +94,20 @@ const loginEmpresa = async (req, res) => {
             });
         }
         const token = authservice_1.AuthService.generateToken("enterprise", empresa.id);
-        res.cookie("auth-enterprise-token", token, {
-            httpOnly: true,
+        res.cookie("auth-token", token, {
             maxAge: 1000 * 60 * 60 * 24 * 7, // 7 Dias
-            sameSite: "strict", // Proteção CSRF
+            sameSite: "strict",
         });
         return res.json({
             success: true,
             message: "Login realizado com sucesso!",
+            token_debug: token, // Útil para debug e flexibilidade
             empresa: {
                 id: empresa.id,
                 nome: empresa.nomeFantasia,
                 naturezaJuridica: empresa.naturezaJuridica,
                 tipo: "empresa",
+                cnpj: empresa.cnpj,
             },
         });
     }
@@ -120,8 +123,7 @@ const loginEmpresa = async (req, res) => {
 exports.loginEmpresa = loginEmpresa;
 const logoutEmpresa = async (req, res) => {
     try {
-        res.clearCookie("auth-enterprise-token", {
-            httpOnly: true,
+        res.clearCookie("auth-token", {
             sameSite: "strict",
         });
         return res.status(200).json({

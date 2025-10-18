@@ -15,11 +15,12 @@ model Usuario {
   senha       String
   cpf         String   @unique
   nome        String
+  admin       Boolean  @default(false)
   dataCriacao DateTime @default(now())
   empresa     Empresa  @relation(fields: [empresaId], references: [id])
   empresaId   Int
 
-  grupo      Grupo?        @relation(fields: [grupoId], references: [id])
+  grupo      Grupo?       @relation(fields: [grupoId], references: [id])
   grupoId    Int?
   lancamento Lancamento[]
 }
@@ -36,8 +37,10 @@ model Empresa {
   CNAES             String
   dataCriacao       DateTime @default(now())
 
-  usuarios Usuario[]
-  grupo    Grupo[]
+  usuarios    Usuario[]
+  grupo       Grupo[]
+  NotaFiscal  NotaFiscal[]
+  Lancamentos Lancamento[]
 }
 
 enum Permissoes {
@@ -62,43 +65,38 @@ model Grupo {
 }
 
 model Lancamento {
-  id              Int         @id @default(autoincrement())
+  id              Int      @id @default(autoincrement())
   data_lancamento DateTime
   latitude        Float
   longitude       Float
-  dataCriacao     DateTime    @default(now())
-  dataAtualizacao DateTime    @updatedAt
+  dataCriacao     DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+  periodoId       Int?
+  notaFiscalId    Int      @unique
+  usuarioId       Int
+  empresaId       Int
+
   /**
-   * Relacão de Um 1-n entre Lançamento e Períodos
+   * Relações
    */
-  periodo         Periodo     @relation(fields: [periodoId], references: [id])
-  periodoId       Int
-  /**
-   * Um lançamento tem várias imagens e taz consigo: o usuário e suas informações
-   */
-  imagens         Imagem[]
-  usuarios        Usuario[]
-  notaFiscal      NotaFiscal?
+  empresa    Empresa    @relation(fields: [empresaId], references: [id])
+  periodo    Periodo?   @relation(fields: [periodoId], references: [id])
+  notaFiscal NotaFiscal @relation(fields: [notaFiscalId], references: [id])
+  imagens    Imagem[]
+  usuarios   Usuario    @relation(fields: [usuarioId], references: [id])
 }
 
 model NotaFiscal {
-  id            Int      @id @default(autoincrement())
-  nome_emitente String?
-  cnpj          String?
-  cpf           String?
-  numero_nota   String   @unique
-  valor         Float?
-  chaveAcesso   Int?
-  descricao     String?
-  xmlPath       String?
-  dataEmissao   DateTime
-  dataCriacao   DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  numero      String   @unique
+  valor       Float?
+  xmlPath     String?
+  dataEmissao DateTime
+  dataCriacao DateTime @default(now())
 
-  /**
-   * Relacão de 1-n entre Lancamento e Períodos
-   */
-  lancamento   Lancamento @relation(fields: [lancamentoId], references: [id])
-  lancamentoId Int        @unique
+  lancamento Lancamento?
+  empresa    Empresa     @relation(fields: [empresaId], references: [id])
+  empresaId  Int
 }
 
 model Imagem {
@@ -114,9 +112,11 @@ model Imagem {
 }
 
 model Periodo {
-  id         Int          @id @default(autoincrement())
-  dataInicio DateTime     @default(now())
+  id         Int      @id @default(autoincrement())
+  dataInicio DateTime @default(now())
   dataFim    DateTime
-  fechado    Boolean      @default(false)
-  lancamento Lancamento[]
+  fechado    Boolean  @default(false)
+  valorTotal Float?
+
+  lancamentos Lancamento[]
 }

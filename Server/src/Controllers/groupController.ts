@@ -1,88 +1,61 @@
 import { Request, Response } from "express";
 import prisma from "../Database/prisma/prisma";
 import { CreateGroupRequest } from "../@types/types";
+import { Permissoes } from "../generated/prisma";
 
-export const CriarGrupo = async (
-  req: Request,
-  res: Response
-): Promise<Response | void> => {
+export const CriarGrupo = async (req: Request, res: Response) => {
   try {
-    const empresaId = req.params.empresaId;
+    const enterpriseId = req.auth!.enterprise!.id;
     const { nome, permissoes }: CreateGroupRequest = req.body;
 
-    if (!empresaId) {
+    if (!nome || nome.trim().length === 0) {
       return res.status(400).json({
-        error: "ID não fornecido",
         success: false,
-      });
-    }
-    const parsedEmpresaId = parseInt(empresaId);
-    if (isNaN(parsedEmpresaId)) {
-      return res.status(400).json({
-        error: "ID deve ser um número",
-        success: false,
-        receivedId: empresaId,
+        error: "NAME_REQUIRED",
+        message: "Nome do grupo é obrigatório",
       });
     }
 
     if (!permissoes || !Array.isArray(permissoes)) {
       return res.status(400).json({
-        code: "PERMISSIONS_INVALID",
-        error: "Permissões devem ser fornecidas como array",
         success: false,
+        error: "PERMISSIONS_INVALID",
+        message: "Permissões devem ser fornecidas como array",
       });
     }
 
-    if (!nome || nome.trim().length === 0) {
-      return res.status(400).json({
-        code: "NAME_REQUIRED",
-        error: "Nome do grupo é obrigatório",
-        success: false,
-      });
-    }
-
-    const empresa = await prisma.empresa.findUnique({
-      where: { id: parsedEmpresaId },
-    });
-
-    if (!empresa) {
-      return res.status(404).json({
-        error: "Empresa não encontrada",
-        success: false,
-      });
-    }
-    const permissoesValidas = Object.values(permissoes);
+    const permissoesValidas = Object.values(Permissoes);
     const permissoesInvalidas = permissoes.filter(
-      (p) => !permissoesValidas.includes(p)
+      (p) => !permissoesValidas.includes(p),
     );
 
     if (permissoesInvalidas.length > 0) {
       return res.status(400).json({
-        error: "Permissões inválidas encontradas",
         success: false,
+        error: "INVALID_PERMISSIONS",
+        message: "Permissões inválidas encontradas",
         invalidPermissions: permissoesInvalidas,
-        validPermissions: permissoesValidas,
       });
     }
 
     const grupoExistente = await prisma.grupo.findFirst({
       where: {
         nome: nome.trim(),
-        empresaId: parsedEmpresaId,
+        empresaId: enterpriseId,
       },
     });
 
     if (grupoExistente) {
       return res.status(400).json({
-        error: "Já existe um grupo com este nome na empresa",
-        code: "GROUP_NAME_EXISTS",
         success: false,
+        error: "GROUP_NAME_EXISTS",
+        message: "Já existe um grupo com este nome na empresa",
       });
     }
 
     const grupo = await prisma.grupo.create({
       data: {
-        empresaId: parsedEmpresaId,
+        empresaId: enterpriseId,
         nome: nome.trim(),
         permissoes: permissoes,
       },
@@ -102,342 +75,253 @@ export const CriarGrupo = async (
       },
     });
 
+    return res.status(201).json({
+      success: true,
+      message: "Grupo criado com sucesso",
+      data: grupo,
+    });
+  } catch (error: any) {
+    console.error("Erro ao criar grupo:", error);
+    return res.status(500).json({
+      success: false,
+      error: "INTERNAL_ERROR",
+      message: error.message,
+    });
+  }
+};
+
+export const verGruposEmpresa = async (req: Request, res: Response) => {
+  try {
+    const enterpriseId = req.auth!.enterprise!.id;
+
+    const grupo = await prisma.grupo.findMany({
+      where: { empresaId: enterpriseId },
+      include: {
+        usuarios: {
+          select: {
+            id: true,
+            nome: true,
+            email: true,
+          },
+        },
+        _count: {
+          select: {
+            usuarios: true,
+          },
+        },
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `${grupo.length} grupos encontrados`,
+      data: grupo,
+    });
+  } catch (error: any) {
+    console.error("Erro ao buscar grupos:", error);
+    return res.status(500).json({
+      success: false,
+      error: "INTERNAL_ERROR",
+      message: error.message,
+    });
+  }
+};
+
+export const deletarGrupoEmpresa = async (req: Request, res: Response) => {
+  try {
+    const { groupId } = req.params;
+    const enterpriseId = req.auth!.enterprise!.id;
+
+    if (!groupId) {
+      return res.status(400).json({
+        success: false,
+        error: "MISSING_ID",
+        message: "ID do grupo não fornecido",
+      });
+    }
+
+    const grupo = await prisma.grupo.findFirst({
+      where: {
+        id: parseInt(groupId),
+        empresaId: enterpriseId,
+      },
+    });
+
     if (!grupo) {
-      return res.status(400).json({
-        code: "GROUP_NOT_FOUND",
-        error: "Grupo não existe",
-        success: false,
-      });
-    }
-    return res.status(200).json({
-      message: "Grupo criado com sucesso!",
-      code: "GROUP_CREATED",
-      success: true,
-      grupo,
-      permissoes,
-    });
-  } catch (error: any) {
-    console.error("Tipo do erro:", error.constructor.name);
-    console.error("Mensagem:", error.message);
-    console.error("Stack:", error.stack);
-
-    return res.status(500).json({
-      error: "Erro interno do servidor",
-      success: false,
-      errorType: error.constructor.name,
-    });
-  }
-};
-
-export const verGruposEmpresa = async (
-  req: Request,
-  res: Response
-): Promise<Response> => {
-  try {
-    const empresaId = req.params.empresaId;
-    if (!empresaId) {
-      return res.status(400).json({
-        error: "ID não fornecido",
-        success: false,
-      });
-    }
-    const parsedEmpresaId = parseInt(empresaId);
-    if (isNaN(parsedEmpresaId)) {
-      return res.status(400).json({
-        error: "ID deve ser um número",
-        success: false,
-        receivedId: empresaId,
-      });
-    }
-
-    const empresa = await prisma.empresa.findFirst({
-      where: { id: parsedEmpresaId },
-    });
-
-    if (!empresa) {
       return res.status(404).json({
-        error: "Empresa não encontrada",
         success: false,
+        error: "NOT_FOUND",
+        message: "Grupo não encontrado ou não pertence à sua empresa",
       });
     }
 
-    const grupos = await prisma.grupo.findMany({
-      where: { empresaId: parsedEmpresaId },
-    });
-
-    if (!grupos) {
-      return res.status(404).json({
-        error: "Grupos não encontrados",
-        success: false,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      code: "GROUPS_FOUND",
-      message: "Grupos Encontrados!",
-      grupos,
-    });
-  } catch (error: any) {
-    console.error("Tipo do erro:", error.constructor.name);
-    console.error("Mensagem:", error.message);
-    console.error("Stack:", error.stack);
-
-    return res.status(500).json({
-      error: "Erro interno do servidor",
-      success: false,
-      errorType: error.constructor.name,
-    });
-  }
-};
-export const deletarGrupoEmpresa = async (
-  req: Request,
-  res: Response
-): Promise<Response> => {
-  try {
-    const empresaId = req.params.empresaId;
-    const grupoId = req.params.grupoId;
-
-    if (!empresaId) {
-      return res.status(400).json({
-        error: "ID não fornecido",
-        success: false,
-      });
-    }
-    const parsedEmpresaId = parseInt(empresaId);
-    if (isNaN(parsedEmpresaId)) {
-      return res.status(400).json({
-        error: "ID deve ser um número",
-        success: false,
-        receivedId: empresaId,
-      });
-    }
-    if (!grupoId) {
-      return res.status(400).json({
-        error: "ID não fornecido",
-        success: false,
-      });
-    }
-    const parsedGrupoId = parseInt(grupoId);
-    if (isNaN(parsedGrupoId)) {
-      return res.status(400).json({
-        error: "ID deve ser um número",
-        success: false,
-        receivedId: grupoId,
-      });
-    }
-
-    const empresa = await prisma.empresa.findFirst({
-      where: { id: parsedEmpresaId },
-    });
-
-    if (!empresa) {
-      return res.status(404).json({
-        error: "Empresa não encontrada",
-        success: false,
-      });
-    }
-    const grupos = await prisma.grupo.delete({
-      where: { id: parsedGrupoId },
+    await prisma.grupo.delete({
+      where: { id: parseInt(groupId) },
     });
 
     return res.status(200).json({
       success: true,
-      code: "GROUP_DELETED",
-      message: "Grupo deletado!",
+      message: "Grupo deletado com sucesso",
     });
   } catch (error: any) {
-    console.error("Tipo do erro:", error.constructor.name);
-    console.error("Mensagem:", error.message);
-    console.error("Stack:", error.stack);
-
+    console.error("Erro ao deletar grupo:", error);
     return res.status(500).json({
-      error: "Erro interno do servidor",
       success: false,
-      errorType: error.constructor.name,
+      error: "INTERNAL_ERROR",
+      message: error.message,
     });
   }
 };
+
 export const deletarTodosGruposEmpresa = async (
   req: Request,
-  res: Response
-): Promise<Response> => {
+  res: Response,
+) => {
   try {
-    const empresaId = req.params.empresaId;
-    const grupoId = req.params.grupoId;
+    const enterpriseId = req.auth!.enterprise!.id;
 
-    if (!empresaId) {
-      return res.status(400).json({
-        error: "ID não fornecido",
-        success: false,
-      });
-    }
-    const parsedEmpresaId = parseInt(empresaId);
-    if (isNaN(parsedEmpresaId)) {
-      return res.status(400).json({
-        error: "ID deve ser um número",
-        success: false,
-        receivedId: empresaId,
-      });
-    }
-    if (!grupoId) {
-      return res.status(400).json({
-        error: "ID não fornecido",
-        success: false,
-      });
-    }
-    const parsedGrupoId = parseInt(grupoId);
-    if (isNaN(parsedGrupoId)) {
-      return res.status(400).json({
-        error: "ID deve ser um número",
-        success: false,
-        receivedId: grupoId,
-      });
-    }
-
-    const empresa = await prisma.empresa.findFirst({
-      where: { id: parsedEmpresaId },
+    const grupos = await prisma.grupo.findMany({
+      where: { empresaId: enterpriseId },
     });
 
-    if (!empresa) {
+    if (grupos.length === 0) {
       return res.status(404).json({
-        error: "Empresa não encontrada",
         success: false,
+        error: "NO_GROUPS",
+        message: "Não há grupos na empresa para deletar",
       });
     }
-    const grupos = await prisma.grupo.deleteMany();
+
+    await prisma.grupo.deleteMany({
+      where: { empresaId: enterpriseId },
+    });
 
     return res.status(200).json({
       success: true,
-      code: "ALL_GROUPS_DELETED",
-      message: "Todos os grupos foram deletados!",
+      message: `${grupos.length} grupos deletados com sucesso`,
     });
   } catch (error: any) {
-    console.error("Tipo do erro:", error.constructor.name);
-    console.error("Mensagem:", error.message);
-    console.error("Stack:", error.stack);
-
+    console.error("Erro ao deletar grupos:", error);
     return res.status(500).json({
-      error: "Erro interno do servidor",
       success: false,
-      errorType: error.constructor.name,
+      error: "INTERNAL_ERROR",
+      message: error.message,
     });
   }
 };
-export const colocarUsuarioGrupo = async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
 
+export const colocarUsuarioGrupo = async (req: Request, res: Response) => {
   try {
-      const groupId = parseInt(req.params.grupoId);
-      const empresaId = parseInt(req.params.empresaId);
-      const userId = parseInt(req.params.usuarioId);
+    const { groupId, userId } = req.params;
+    const enterpriseId = req.auth!.enterprise!.id;
 
-    if (!empresaId && !userId && !groupId) {
+    if (!groupId || !userId) {
       return res.status(400).json({
-        code: "USERS_AND_ENTERPRISES_AND_GROUPS_NOT_FOUND",
-        error: "Doensn't exists",
+        success: false,
+        error: "MISSING_IDS",
+        message: "IDs de grupo e usuário são obrigatórios",
       });
     }
-    const user = await prisma.usuario.findUnique({
-      where: { id: userId },
+
+    // Validate user exists and belongs to company
+    const usuario = await prisma.usuario.findFirst({
+      where: {
+        id: parseInt(userId),
+        empresaId: enterpriseId,
+      },
     });
 
-    if (!user || user.empresaId !== empresaId) {
-      return res.status(400).json({
-        error: "Usuário não encontrado ou não pertence à empresa",
-        code: "NO_USER_OR_USER_DOESN'T_BELONG_TO_ENTERPRISE",
+    if (!usuario) {
+      return res.status(404).json({
+        success: false,
+        error: "USER_NOT_FOUND",
+        message: "Usuário não encontrado ou não pertence à sua empresa",
       });
     }
-    const group = await prisma.grupo.findUnique({
-      where: { id: groupId },
+
+    // Validate group exists and belongs to company
+    const grupo = await prisma.grupo.findFirst({
+      where: {
+        id: parseInt(groupId),
+        empresaId: enterpriseId,
+      },
     });
 
-    if (!group || group.empresaId !== empresaId) {
-      return res.status(400).json({
-        error: "Grupo não encontrado ou não pertence à empresa",
-        code: "NO_GROUP_OR_USER_DOESN'T_BELONG_TO_ENTERPRISE",
+    if (!grupo) {
+      return res.status(404).json({
+        success: false,
+        error: "GROUP_NOT_FOUND",
+        message: "Grupo não encontrado ou não pertence à sua empresa",
       });
     }
 
+    // Add user to group
     await prisma.usuario.update({
-      where: { id: userId },
-      data: { grupoId: group.id },
+      where: { id: parseInt(userId) },
+      data: { grupoId: parseInt(groupId) },
     });
 
     return res.status(200).json({
-      message: "Usuário agora pertençe ao grupo",
       success: true,
-      code: "USER_BELONGS_TO_GROUP",
+      message: "Usuário adicionado ao grupo com sucesso",
     });
   } catch (error: any) {
-    console.error("Tipo do erro:", error.constructor.name);
-    console.error("Mensagem:", error.message);
-    console.error("Stack:", error.stack);
-
+    console.error("Erro ao adicionar usuário ao grupo:", error);
     return res.status(500).json({
-      error: "Erro interno do servidor",
       success: false,
-      errorType: error.constructor.name,
+      error: "INTERNAL_ERROR",
+      message: error.message,
     });
   }
 };
-export const tirarUsuarioGrupo = async (
-  req: Request,
-  res: Response,
-  groupId: number,
-  empresaId: number,
-  userId: number
-): Promise<Response> => {
+
+export const removerUsuarioGrupo = async (req: Request, res: Response) => {
   try {
-    if (!empresaId && !userId && !groupId) {
+    const { grupoId, usuarioId } = req.params;
+    const empresaId = req.auth!.enterprise!.id;
+
+    if (!grupoId || !usuarioId) {
       return res.status(400).json({
-        code: "USERS_AND_ENTERPRISES_AND_GROUPS_NOT_FOUND",
-        error: "Doensn't exists",
+        success: false,
+        error: "MISSING_IDS",
+        message: "IDs de grupo e usuário são obrigatórios",
       });
     }
-    const user = await prisma.usuario.findUnique({
-      where: { id: userId },
+
+    // Validate user exists, belongs to company and is in the group
+    const usuario = await prisma.usuario.findFirst({
+      where: {
+        id: parseInt(usuarioId),
+        empresaId: empresaId,
+        grupoId: parseInt(grupoId),
+      },
     });
 
-    if (!user || user.empresaId !== empresaId) {
-      return res.status(400).json({
-        error: "Usuário não encontrado ou não pertence à empresa",
-        code: "NO_USER_OR_USER_DOESN'T_BELONG_TO_ENTERPRISE",
+    if (!usuario) {
+      return res.status(404).json({
+        success: false,
+        error: "USER_NOT_IN_GROUP",
+        message:
+          "Usuário não encontrado no grupo ou não pertence à sua empresa",
       });
     }
-    const group = await prisma.grupo.findUnique({
-      where: { id: groupId },
+
+    // Remove user from group
+    await prisma.usuario.update({
+      where: { id: parseInt(usuarioId) },
+      data: { grupoId: null },
     });
-
-    if (!group || group.empresaId !== empresaId) {
-      return res.status(400).json({
-        error: "Grupo não encontrado ou não pertence à empresa",
-        code: "NO_GROUP_OR_USER_DOESN'T_BELONG_TO_ENTERPRISE",
-      });
-    }
-
-    //await prisma.grupo.delete({
-    //  where: {
-      //  usuarios: [userId],
-      //}
-    //})
 
     return res.status(200).json({
-      message: "Usuário agora pertençe ao grupo",
       success: true,
-      code: "USER_BELONGS_TO_GROUP",
+      message: "Usuário removido do grupo com sucesso",
     });
   } catch (error: any) {
-    console.error("Tipo do erro:", error.constructor.name);
-    console.error("Mensagem:", error.message);
-    console.error("Stack:", error.stack);
-
+    console.error("Erro ao remover usuário do grupo:", error);
     return res.status(500).json({
-      error: "Erro interno do servidor",
       success: false,
-      errorType: error.constructor.name,
+      error: "INTERNAL_ERROR",
+      message: error.message,
     });
   }
 };

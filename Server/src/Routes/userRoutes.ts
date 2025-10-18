@@ -6,14 +6,14 @@ import {
 } from "../Controllers/userController";
 import { criarUsuario } from "../Controllers/auth/User";
 import { deletarUsuario } from "../Controllers/enterpriseController";
+import { authSession } from "../Middlewares/authMiddleware";
 const router = Router();
 
 //Usuarios
 router.post("/auth/register", criarUsuario);
-router.get("/", retornarUsuarios);
 router.get("/:id", retornarUsuarioId);
-router.delete("/:id", deletarUsuario);
+router.delete("/:id", authSession, deletarUsuario);
 router.post("/auth/login", loginUsuario);
-router.post("/auth/logout", logoutUsuario);
+router.post("/auth/logout", authSession, logoutUsuario);
 
 export default router;

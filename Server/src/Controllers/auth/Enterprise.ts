@@ -3,9 +3,11 @@ import { AuthService } from "../../Helpers/authservice";
 import prisma from "../../Database/prisma/prisma";
 import type { EnterprisePayloadLogin } from "../../@types/types";
 import bcrypt from "bcrypt";
-import {z} from "zod";
-import { CriarEmpresaInput, criarEmpresaSchema } from "../../Schemas/enterpriseSchemas";
-
+import { z } from "zod";
+import {
+  CriarEmpresaInput,
+  criarEmpresaSchema,
+} from "../../libs/enterpriseSchemas";
 
 const criarEmpresa = async (req: Request, res: Response) => {
   try {
@@ -23,45 +25,50 @@ const criarEmpresa = async (req: Request, res: Response) => {
         endereco: validatedData.endereco,
         situacaoCadastral: validatedData.situacaoCadastral,
         naturezaJuridica: validatedData.naturezaJuridica,
-        CNAES: validatedData.CNAES
-      }
+        CNAES: validatedData.CNAES,
+      },
     });
 
     // Resposta sem retornar a senha
     const { senha: _, ...empresaResponse } = empresa;
-    
+
     return res.status(201).json({
       success: true,
       data: empresaResponse,
-      message: "Empresa criada com sucesso!"
+      message: "Empresa criada com sucesso!",
     });
-   } catch (error: unknown) {
+  } catch (error: unknown) {
     // Erro de validação do Zod
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
         message: "Dados inválidos",
-      })
-    }
-    
-    // Erro de constraint unique do Prisma (CNPJ duplicado)
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-      return res.status(409).json({
-        success: false,
-        message: "CNPJ já está cadastrado"
       });
     }
-    
+
+    // Erro de constraint unique do Prisma (CNPJ duplicado)
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2002"
+    ) {
+      return res.status(409).json({
+        success: false,
+        message: "CNPJ já está cadastrado",
+      });
+    }
+
     // Erro genérico
-    console.error('Erro ao criar empresa:', error);
+    console.error("Erro ao criar empresa:", error);
     return res.status(500).json({
       success: false,
-      message: "Erro interno do servidor"
+      message: "Erro interno do servidor",
     });
   }
 };
 
-const loginEmpresa = async (req: Request, res: Response):Promise<Response> => {
+const loginEmpresa = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { cnpj, senha }: EnterprisePayloadLogin = req.body;
 
@@ -76,7 +83,6 @@ const loginEmpresa = async (req: Request, res: Response):Promise<Response> => {
     const empresa = await prisma.empresa.findUnique({
       where: { cnpj: cnpjFiltrado },
     });
-    console.log("CREDENCIAIS DA EMPRESA:", empresa);
     if (!empresa) {
       return res.status(401).json({
         success: false,
@@ -95,19 +101,20 @@ const loginEmpresa = async (req: Request, res: Response):Promise<Response> => {
     }
     const token = AuthService.generateToken("enterprise", empresa.id);
     res.cookie("auth-token", token, {
-      httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 Dias
-      sameSite: "strict", 
+      sameSite: "strict",
     });
 
     return res.json({
       success: true,
       message: "Login realizado com sucesso!",
+      token_debug: token, // Útil para debug e flexibilidade
       empresa: {
         id: empresa.id,
         nome: empresa.nomeFantasia,
         naturezaJuridica: empresa.naturezaJuridica,
         tipo: "empresa",
+        cnpj: empresa.cnpj,
       },
     });
   } catch (error) {
@@ -121,11 +128,13 @@ const loginEmpresa = async (req: Request, res: Response):Promise<Response> => {
   }
 };
 
-const logoutEmpresa = async (req: Request, res: Response):Promise<Response> => {
+const logoutEmpresa = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
   try {
-    res.clearCookie("auth-enterprise-token", {
-      httpOnly: true,
-      sameSite: "strict", 
+    res.clearCookie("auth-token", {
+      sameSite: "strict",
     });
 
     return res.status(200).json({
@@ -134,14 +143,13 @@ const logoutEmpresa = async (req: Request, res: Response):Promise<Response> => {
     });
   } catch (error) {
     console.error("Erro ao realizar logout:", error);
-    
+
     return res.status(500).json({
       success: false,
       error: "Erro ao realizar logout. Tente novamente.",
       code: "LOGOUT_ERROR",
     });
   }
-}
+};
 
-
-export {loginEmpresa, logoutEmpresa, criarEmpresa};
+export { loginEmpresa, logoutEmpresa, criarEmpresa };
