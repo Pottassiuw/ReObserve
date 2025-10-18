@@ -41,7 +41,13 @@ export type AtualizarUsuarioInput = z.infer<typeof atualizarUsuarioSchema>;
 
 export const LoginUsuarioSchema = z.object({
   email: z.string().email({ message: "Por favor, insira um email válido!" }),
-  senha: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
+  senha: z
+    .string()
+    .min(8, "Senha deve ter pelo menos 8 caracteres")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      "Senha deve conter pelo menos: 1 letra minúscula, 1 maiúscula e 1 número",
+    ),
 });
 
 export type LoginUsuarioInput = z.infer<typeof LoginUsuarioSchema>;

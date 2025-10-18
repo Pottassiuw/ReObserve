@@ -8,7 +8,7 @@ import Navbar from "@/components/navbar";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginUsuarioSchema, type LoginUsuarioInput } from "@/lib/userSchemas";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { useAppNavigator } from "@/hooks/navigate";
 

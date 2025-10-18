@@ -90,8 +90,19 @@ export const atualizarEmpresaSchema = criarEmpresaSchema.partial().omit({
 export type AtualizarEmpresaInput = z.infer<typeof atualizarEmpresaSchema>;
 
 export const LoginEmpresaSchema = z.object({
-  email: z.string().email({ message: "Por favor, insira um email válido!" }),
-  senha: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
+  cnpj: z
+    .string()
+    .min(1, "CNPJ é obrigatório")
+    .transform((val) => val.replace(/[^\d]+/g, "")) // Remove formatação
+    .refine((val) => val.length === 14, "CNPJ deve ter 14 dígitos")
+    .refine((val) => isValidCNPJ(val), "CNPJ inválido"),
+  senha: z
+    .string()
+    .min(8, "Senha deve ter pelo menos 8 caracteres")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      "Senha deve conter pelo menos: 1 letra minúscula, 1 maiúscula e 1 número",
+    ),
 });
 
 export type LoginEmpresaInput = z.infer<typeof LoginEmpresaSchema>;

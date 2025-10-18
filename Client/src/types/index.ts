@@ -1,4 +1,4 @@
-export interface Usuario {
+export interface User {
   id: number;
   cpf: string;
   senha: string;
@@ -7,7 +7,7 @@ export interface Usuario {
   isAdmin: boolean | null;
   empresaId: number;
 }
-export interface Empresa {
+export interface Enterprise {
   id: number;
   cnpj: string;
   senha: string;

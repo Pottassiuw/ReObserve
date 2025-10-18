@@ -99,11 +99,14 @@ const loginUsuario = async (req, res) => {
         return res.json({
             success: true,
             message: "Login realizado com sucesso!",
+            token_debug: token, // Útil para debug e flexibilidade
             user: {
                 id: user.id,
                 email: user.email,
                 nome: user.nome,
+                admin: user.admin, // IMPORTANTE
                 tipo: "user",
+                cpf: user.cpf,
             },
         });
     }

@@ -10,15 +10,15 @@ export const useAppNavigator = () => {
     navigateToDashboard: () => {
       navigate("/dashboard");
     },
-
     navigateToLogin: () => {
       navigate("/user/login");
     },
-
+    navigateToRegisterEnterprise: () => {
+      navigate("/enterprise/register");
+    },
     navigateToHome: () => {
       navigate("/");
     },
-
     goBack: () => {
       navigate(-1);
     },

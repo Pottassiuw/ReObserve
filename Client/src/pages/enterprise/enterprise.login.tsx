@@ -5,28 +5,57 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/navbar";
-
+import {
+  LoginEmpresaSchema,
+  type LoginEmpresaInput,
+} from "@/lib/enterpriseSchemas";
+import { useAppNavigator } from "@/hooks/navigate";
+import { toast } from "sonner";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { useAuthStore } from "@/stores/authStore";
+import { formatCNPJ } from "@/utils/formatters";
 export default function Login() {
-  const [cnpj, setCnpj] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuthStore();
+  const { navigateToRegisterEnterprise, navigateToDashboard } =
+    useAppNavigator();
 
-  const navigate = useNavigate();
-
-  const navigateToRegister = () => {
-    navigate("/enterprise/register");
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<LoginEmpresaInput>({
+    resolver: zodResolver(LoginEmpresaSchema),
+  });
+  const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCNPJ = formatCNPJ(e.target.value);
+    setValue("cnpj", formattedCNPJ, { shouldValidate: true });
   };
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: LoginEmpresaInput) => {
     setIsLoading(true);
-
-    setTimeout(() => {
+    const loadingToastId = toast.loading("Logando Empresa...");
+    try {
+      await login("enterprise", data);
+      toast.success("Empresa logada com sucesso!", {
+        id: loadingToastId,
+        duration: 2000,
+      });
+      navigateToDashboard();
+    } catch (error: any) {
+      toast.error("Erro ao logar a Empresa!", {
+        id: loadingToastId,
+        description: error?.message || "Ocorreu um erro desconhecido.",
+        duration: 5000,
+      });
+      console.error(error);
+    } finally {
       setIsLoading(false);
-      console.log("Login realizado:", { cnpj, password });
-    }, 1500);
+    }
   };
 
   return (
@@ -61,12 +90,18 @@ export default function Login() {
                   <Input
                     id="cnpj"
                     type="text"
-                    value={cnpj}
-                    onChange={(e) => setCnpj(e.target.value)}
+                    value={watch("cnpj")}
+                    {...register("cnpj")}
+                    onChange={handleCNPJChange}
                     placeholder="00.000.000/0000-00"
                     className="pl-10 py-6 rounded-xl"
                   />
                 </div>
+                {errors.cnpj && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.cnpj?.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -78,8 +113,7 @@ export default function Login() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    {...register("senha")}
                     placeholder="••••••••"
                     className="pl-10 pr-12 py-6 rounded-xl"
                   />
@@ -97,6 +131,11 @@ export default function Login() {
                     )}
                   </Button>
                 </div>
+                {errors.senha && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.senha?.message}
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-between text-sm">
@@ -119,7 +158,7 @@ export default function Login() {
 
               <Button
                 type="button"
-                onClick={handleSubmit}
+                onClick={handleSubmit(onSubmit)}
                 disabled={isLoading}
                 className="w-full bg-indigo-500 hover:bg-indigo-600 py-6 rounded-xl shadow-md hover:shadow-lg"
               >
@@ -145,7 +184,7 @@ export default function Login() {
               <p className="text-gray-600">
                 Não tem uma conta?{" "}
                 <Button
-                  onClick={navigateToRegister}
+                  onClick={navigateToRegisterEnterprise}
                   variant="link"
                   className="text-indigo-500 hover:text-indigo-600 p-0 h-auto font-semibold hover:cursor-pointer"
                 >

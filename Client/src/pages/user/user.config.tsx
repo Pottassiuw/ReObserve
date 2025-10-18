@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -21,37 +21,114 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
+  Loader2,
 } from "lucide-react";
+import { useUserStore } from "@/stores/userStore";
+import { useAuthStore } from "@/stores/authStore";
+import { useEnterpriseStore } from "@/stores/enterpriseStore";
 
 export default function SettingsPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Estados para configurações do usuário
+  const {
+    user,
+    isLoading: userLoading,
+    error: userError,
+    retornarUsuario,
+  } = useUserStore();
+  const { userId } = useAuthStore();
+  const { enterprise, getEnterprise } = useEnterpriseStore();
+
   const [userData, setUserData] = useState({
-    name: "João Silva",
-    email: "joao.silva@minhaempresa.com",
+    name: "",
+    email: "",
   });
 
-  // Dados da empresa (read-only)
-  const companyData = {
-    name: "Minha Empresa LTDA",
-    cnpj: "12.345.678/0001-90",
-    address: "Rua Example, 123",
-    city: "São Paulo",
-    state: "SP",
-    cep: "01234-567",
-  };
+  // Debug logs
+  useEffect(() => {
+    console.log("🔍 Debug - userId:", userId);
+    console.log("🔍 Debug - user:", user);
+    console.log("🔍 Debug - enterprise:", enterprise);
+    console.log("🔍 Debug - user?.empresaId:", user?.empresaId);
+  }, [userId, user, enterprise]);
+
+  useEffect(() => {
+    if (userId) {
+      console.log("📞 Chamando retornarUsuario com ID:", userId);
+      retornarUsuario(userId);
+    }
+  }, [userId, retornarUsuario]);
+
+  useEffect(() => {
+    if (user?.empresaId) {
+      console.log("🏢 Chamando getEnterprise com ID:", user.empresaId);
+      getEnterprise(user.empresaId);
+    }
+  }, [user?.empresaId, getEnterprise]);
+
+  useEffect(() => {
+    if (user) {
+      console.log("✏️ Atualizando userData com:", {
+        nome: user.nome,
+        email: user.email,
+      });
+      setUserData({
+        name: user.nome || "",
+        email: user.email || "",
+      });
+    }
+  }, [user]);
 
   const handleSave = () => {
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-6 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <p className="text-indigo-900">Carregando configurações...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (userError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-6">
+        <div className="max-w-4xl mx-auto">
+          <Alert className="bg-red-50 border-red-200">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              {userError}
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-6">
+        <div className="max-w-4xl mx-auto">
+          <Alert className="bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              Nenhum usuário encontrado.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold text-indigo-900">Configurações</h1>
           <p className="text-muted-foreground">
@@ -59,7 +136,23 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        {/* Success Alert */}
+        {/* Debug info - remover depois */}
+        <Alert className="bg-blue-50 border-blue-200">
+          <AlertDescription className="text-blue-800">
+            <strong>Debug:</strong>
+            <br />
+            userId: {userId || "null"}
+            <br />
+            user.nome: {user?.nome || "null"}
+            <br />
+            user.email: {user?.email || "null"}
+            <br />
+            user.empresaId: {user?.empresaId || "null"}
+            <br />
+            enterprise: {enterprise ? "carregado" : "null"}
+          </AlertDescription>
+        </Alert>
+
         {saveSuccess && (
           <Alert className="bg-green-50 border-green-200">
             <CheckCircle className="h-4 w-4 text-green-600" />
@@ -69,7 +162,6 @@ export default function SettingsPage() {
           </Alert>
         )}
 
-        {/* Perfil do Usuário */}
         <Card className="border-0 shadow-md">
           <CardHeader>
             <CardTitle className="text-indigo-900 flex items-center gap-2">
@@ -97,6 +189,9 @@ export default function SettingsPage() {
                     className="pl-10 border-indigo-100 focus:border-indigo-300"
                   />
                 </div>
+                <p className="text-xs text-gray-500">
+                  Valor atual: {userData.name}
+                </p>
               </div>
 
               <div className="space-y-2 md:col-span-2">
@@ -115,7 +210,21 @@ export default function SettingsPage() {
                     className="pl-10 border-indigo-100 focus:border-indigo-300"
                   />
                 </div>
+                <p className="text-xs text-gray-500">
+                  Valor atual: {userData.email}
+                </p>
               </div>
+
+              {user.cpf && (
+                <div className="space-y-2">
+                  <Label className="text-indigo-900">CPF</Label>
+                  <Input
+                    value={user.cpf}
+                    disabled
+                    className="bg-white/50 border-indigo-100 text-indigo-900"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end">
@@ -130,7 +239,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Segurança */}
         <Card className="border-0 shadow-md">
           <CardHeader>
             <CardTitle className="text-indigo-900 flex items-center gap-2">
@@ -224,83 +332,59 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Informações da Empresa (Read-only) */}
-        <Card className="border-0 shadow-md bg-gradient-to-br from-indigo-50/50 to-white">
-          <CardHeader>
-            <CardTitle className="text-indigo-900 flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Dados da Empresa
-            </CardTitle>
-            <CardDescription>
-              Informações da sua empresa (somente leitura)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2 md:col-span-2">
-                <Label className="text-indigo-900">Razão Social</Label>
-                <Input
-                  value={companyData.name}
-                  disabled
-                  className="bg-white/50 border-indigo-100 text-indigo-900"
-                />
+        {user.empresaId && enterprise && (
+          <Card className="border-0 shadow-md bg-gradient-to-br from-indigo-50/50 to-white">
+            <CardHeader>
+              <CardTitle className="text-indigo-900 flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Dados da Empresa
+              </CardTitle>
+              <CardDescription>
+                Informações da sua empresa (somente leitura)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-indigo-900">Razão Social</Label>
+                  <Input
+                    value={enterprise.razaoSocial || ""}
+                    disabled
+                    className="bg-white/50 border-indigo-100 text-indigo-900"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-indigo-900">CNPJ</Label>
+                  <Input
+                    value={enterprise.cnpj || ""}
+                    disabled
+                    className="bg-white/50 border-indigo-100 text-indigo-900"
+                  />
+                </div>
+
+                {enterprise.endereco && (
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="text-indigo-900">Endereço</Label>
+                    <Input
+                      value={enterprise.endereco}
+                      disabled
+                      className="bg-white/50 border-indigo-100 text-indigo-900"
+                    />
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-indigo-900">CNPJ</Label>
-                <Input
-                  value={companyData.cnpj}
-                  disabled
-                  className="bg-white/50 border-indigo-100 text-indigo-900"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-indigo-900">CEP</Label>
-                <Input
-                  value={companyData.cep}
-                  disabled
-                  className="bg-white/50 border-indigo-100 text-indigo-900"
-                />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label className="text-indigo-900">Endereço</Label>
-                <Input
-                  value={companyData.address}
-                  disabled
-                  className="bg-white/50 border-indigo-100 text-indigo-900"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-indigo-900">Cidade</Label>
-                <Input
-                  value={companyData.city}
-                  disabled
-                  className="bg-white/50 border-indigo-100 text-indigo-900"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-indigo-900">Estado</Label>
-                <Input
-                  value={companyData.state}
-                  disabled
-                  className="bg-white/50 border-indigo-100 text-indigo-900"
-                />
-              </div>
-            </div>
-
-            <Alert className="bg-indigo-50 border-indigo-200">
-              <AlertCircle className="h-4 w-4 text-indigo-600" />
-              <AlertDescription className="text-indigo-800">
-                Para alterar os dados da empresa, entre em contato com o
-                administrador do sistema.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
+              <Alert className="bg-indigo-50 border-indigo-200">
+                <AlertCircle className="h-4 w-4 text-indigo-600" />
+                <AlertDescription className="text-indigo-800">
+                  Para alterar os dados da empresa, entre em contato com o
+                  administrador do sistema.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

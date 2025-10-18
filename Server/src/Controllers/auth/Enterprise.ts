@@ -83,7 +83,6 @@ const loginEmpresa = async (req: Request, res: Response): Promise<Response> => {
     const empresa = await prisma.empresa.findUnique({
       where: { cnpj: cnpjFiltrado },
     });
-    console.log("CREDENCIAIS DA EMPRESA:", empresa);
     if (!empresa) {
       return res.status(401).json({
         success: false,
@@ -109,11 +108,13 @@ const loginEmpresa = async (req: Request, res: Response): Promise<Response> => {
     return res.json({
       success: true,
       message: "Login realizado com sucesso!",
+      token_debug: token, // Útil para debug e flexibilidade
       empresa: {
         id: empresa.id,
         nome: empresa.nomeFantasia,
         naturezaJuridica: empresa.naturezaJuridica,
         tipo: "empresa",
+        cnpj: empresa.cnpj,
       },
     });
   } catch (error) {
