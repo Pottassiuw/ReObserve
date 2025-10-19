@@ -4,11 +4,11 @@ import App from "@/App";
 import UserLogin from "@/pages/user/user.login";
 import EnterpriseLogin from "@/pages/enterprise/enterprise.login";
 import EnterpriseRegister from "@/pages/enterprise/enterprise.register";
-import Release from "@/pages/features/create.release";
+import ReleasesPage from "@/pages/releasesPage";
 import DashboardLayout from "@/layout/dashboardLayout";
 import Dashboard from "@/pages/dashboard";
 import UserSettingsPage from "@/pages/user/user.config";
-import CreatePeriodPage from "@/pages/features/create.period";
+import PeriodsPage from "@/pages/periodsPage";
 import PageNotFound from "@/pages/notFound";
 import ProtectedRoute from "./protectedRoutes";
 export const router = createBrowserRouter([
@@ -29,9 +29,9 @@ export const router = createBrowserRouter([
         ),
         children: [
           { index: true, path: "/dashboard", element: <Dashboard /> },
-          { path: "/features/release/new", element: <Release /> },
+          { path: "/releases", element: <ReleasesPage /> },
           { path: "/user/settings", element: <UserSettingsPage /> },
-          { path: "/features/period/close", element: <CreatePeriodPage /> },
+          { path: "/periods", element: <PeriodsPage /> },
         ],
       },
     ],

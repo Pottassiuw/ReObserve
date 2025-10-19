@@ -23,9 +23,10 @@ export const loginApi = async (
   }
 };
 
-export const logoutApi = async () => {
+export const logoutApi = async (type: "user" | "enterprise") => {
+  const endpoint = type === "user" ? "users" : "enterprises";
   try {
-    await Client.post("/auth/logout", { withCredentials: true });
+    await Client.post(`${endpoint}/auth/logout`, { withCredentials: true });
   } catch (error) {
     throw error;
   }

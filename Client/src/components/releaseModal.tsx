@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Camera, RotateCcw, Upload, X } from "lucide-react";
-import Release from "@/pages/features/create.release";
+import Release from "@/pages/releasesPage";
+import type { Lancamento } from "@/types/index";
 
 interface ModalLancamentoProps {
   open: boolean;

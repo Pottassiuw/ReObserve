@@ -19,7 +19,7 @@ interface AuthState {
     type: "user" | "enterprise",
     data: UserPayload | EnterprisePayload,
   ) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: (type: "user" | "enterprise") => Promise<void>;
   checkAuth: () => void;
 }
 
@@ -61,8 +61,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  logout: async () => {
-    await logoutApi();
+  logout: async (type) => {
+    await logoutApi(type);
     set({ isAuthenticated: false, userType: null, admin: false, userId: null });
   },
 

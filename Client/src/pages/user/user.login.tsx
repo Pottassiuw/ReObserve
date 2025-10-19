@@ -10,7 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginUsuarioSchema, type LoginUsuarioInput } from "@/lib/userSchemas";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
-import { useAppNavigator } from "@/hooks/navigate";
+import { useAppNavigator } from "@/hooks/useAppNavigator";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);

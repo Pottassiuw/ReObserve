@@ -10,7 +10,7 @@ import {
   LoginEmpresaSchema,
   type LoginEmpresaInput,
 } from "@/lib/enterpriseSchemas";
-import { useAppNavigator } from "@/hooks/navigate";
+import { useAppNavigator } from "@/hooks/useAppNavigator";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
