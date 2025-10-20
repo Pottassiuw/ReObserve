@@ -190,8 +190,8 @@ export default function AppSidebar() {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     className="hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700"
-                    onClick={() => navigate("/users/manage")}
-                    isActive={location.pathname === "/users/manage"}
+                    onClick={() => navigate("/users/view")}
+                    isActive={location.pathname === "/users/view"}
                     tooltip="Gerenciar Usuários"
                   >
                     <Users className="h-4 w-4 text-indigo-600" />

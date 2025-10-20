@@ -1,6 +1,7 @@
 import Client from "@/api/client";
+import type { User } from "@/types";
 
-export const retornarUsuario = async (id: number) => {
+export const retornarUsuario = async (id: number): Promise<User> => {
   try {
     if (!id) {
       throw new Error("ID do usuário não fornecido");
@@ -15,8 +16,25 @@ export const retornarUsuario = async (id: number) => {
     throw new Error(`Erro ao buscar usuário: ${error.message}`);
   }
 };
+export const retornarUsuarios = async (empresaId: number): Promise<User[]> => {
+  try {
+    const response = await Client.get(`/enterprises/${empresaId}/users/`);
+    if (!response || !response.data) {
+      throw new Error("Empresa não existe");
+    }
+    console.log("📦 Resposta da API:", response.data);
+    const usuarios = response.data.users || response.data;
 
-export const deletarUsuario = async (id: number) => {
+    console.log(
+      "📋 Usuarios extraídos:",
+      Array.isArray(usuarios) ? usuarios : [],
+    );
+    return Array.isArray(usuarios) ? usuarios : [];
+  } catch (error) {
+    throw new Error(`Failed to fetch users: ${error}`);
+  }
+};
+export const deletarUsuario = async (id: number): Promise<void> => {
   try {
     if (!id) {
       throw new Error("ID do usuário não fornecido");

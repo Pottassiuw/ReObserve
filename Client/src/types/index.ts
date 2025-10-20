@@ -4,9 +4,12 @@ export interface User {
   senha: string;
   nome: string;
   email: string;
+  dataCriacao: Date;
   isAdmin: boolean | null;
   empresaId: number;
   grupoId: number;
+  grupo?: Grupo;
+  lancamento?: Lancamento[];
 }
 export interface Grupo {
   id: number;

@@ -1,5 +1,5 @@
 import Client from "@/api/client";
-import type { Enterprise, User } from "@/types";
+import type { Enterprise } from "@/types";
 
 export const retornarEmpresa = async (id: number): Promise<Enterprise> => {
   try {

@@ -10,9 +10,8 @@ export interface CriarLancamentoPayload {
     NotaFiscal,
     "id" | "dataCriacao" | "empresaId" | "lancamento"
   >;
-  periodoId?: number | null; // Pode vir como number, string ou null do formulário
+  periodoId?: number | null;
 
-  // O crucial: O campo de arquivos que o usuário seleciona
   imagensFiles: File[];
 }
 
