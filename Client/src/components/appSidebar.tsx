@@ -19,25 +19,32 @@ import {
   FileEdit,
   LayoutDashboard,
   Lock,
+  UserPlus,
+  Users,
 } from "lucide-react";
 import Logo from "@/assets/ProjectLogo.png";
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissionsStore } from "@/stores/permissionsStore";
 import { useAppNavigator } from "@/hooks/useAppNavigator";
+import { useUserStore } from "@/stores/userStore";
+import { useEnterpriseStore } from "@/stores/enterpriseStore";
 
 export default function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { userType, logout } = useAuthStore();
+  const { userType, logout, userId } = useAuthStore();
   const { canViewRelease, canViewPeriod, isAdmin } = usePermissionsStore();
   const { navigateToLogin } = useAppNavigator();
+  const { user } = useUserStore();
+  const { enterprise } = useEnterpriseStore();
 
   // Define quais páginas o usuário pode acessar
   const canAccessReports = userType === "enterprise" || isAdmin();
   const canAccessHistory = userType === "enterprise" || isAdmin();
   const canAccessSearch = userType === "enterprise" || isAdmin();
   const canAccessDashboard = userType === "enterprise" || isAdmin();
+  const canManageUsers = userType === "enterprise"; // Apenas empresas
 
   const mainMenuItems = [
     {
@@ -134,7 +141,7 @@ export default function AppSidebar() {
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       className="hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700"
-                      onClick={() => navigate("/features/release")}
+                      onClick={() => navigate("/releases")}
                       isActive={location.pathname.includes("/releases")}
                       tooltip="Lançamentos"
                     >
@@ -148,7 +155,7 @@ export default function AppSidebar() {
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       className="hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700"
-                      onClick={() => navigate("/features/period")}
+                      onClick={() => navigate("/periods")}
                       isActive={location.pathname.includes("/periods")}
                       tooltip="Períodos"
                     >
@@ -157,6 +164,40 @@ export default function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Seção de Usuários - Apenas para Empresas */}
+        {canManageUsers && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Usuários</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    className="hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700"
+                    onClick={() => navigate("/user/create")}
+                    isActive={location.pathname === "/user/create"}
+                    tooltip="Criar Usuário"
+                  >
+                    <UserPlus className="h-4 w-4 text-indigo-600" />
+                    <span>Criar Usuário</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    className="hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700"
+                    onClick={() => navigate("/users/manage")}
+                    isActive={location.pathname === "/users/manage"}
+                    tooltip="Gerenciar Usuários"
+                  >
+                    <Users className="h-4 w-4 text-indigo-600" />
+                    <span>Gerenciar Usuários</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -202,14 +243,11 @@ export default function AppSidebar() {
             </span>
             <span className="text-xs text-indigo-600/70 truncate">
               {isAdmin() && "Admin • "}
-              {userType === "enterprise"
-                ? "CNPJ: 12.345.678/0001-90"
-                : "Usuário"}
+              {userType === "enterprise" ? enterprise?.cnpj : user?.nome}
             </span>
             <div>
-              <span className="text-xs text-indigo-600/70 truncate">Sair</span>
               <button
-                className="border-2 border-red-500 bg-transparent text-red-400"
+                className="p-1 bg-red-400/20 rounded-sm text-red-400 text-xs w-fit hover:bg-red-500/80 hover:text-white"
                 onClick={async () => {
                   try {
                     await logout(userType ? "user" : "enterprise");

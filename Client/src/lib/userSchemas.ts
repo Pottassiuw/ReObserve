@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const criarUsuarioSchema = z.object({
-  nome: z.string().min(1).max(48),
+  nome: z.string().min(12, "Nome deve ter pelo menos 16 caracteres").max(48),
   cpf: z.string().refine((cpf: string) => {
     if (typeof cpf !== "string") return false;
     cpf = cpf.replace(/[^\d]+/g, "");
@@ -28,8 +28,7 @@ export const criarUsuarioSchema = z.object({
     ),
   email: z.string().email({ message: "Por favor, insira um email válido!" }),
   //Espaço para validação (se necessária da FK Empresa)
-  empresaId: z.number().max(15, "Índice fora do alcançe"),
-  grupoId: z.number().max(15, "Índice fora do alcançe").optional(),
+  grupoId: z.number().max(15, "Índice fora do alcançe"),
 });
 
 export type criarUsuarioInput = z.infer<typeof criarUsuarioSchema>;

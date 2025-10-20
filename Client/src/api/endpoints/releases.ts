@@ -19,9 +19,12 @@ export interface CriarLancamentoPayload {
 export const listarLancamentos = async (
   empresaId?: number,
 ): Promise<Lancamento[]> => {
-  const response = await Client.get("/Lancamentos", {
-    params: empresaId ? { empresaId } : undefined,
-  });
+  const response = await Client.get(
+    "/releases/enterprise/:empresaId/releases",
+    {
+      params: empresaId ? { empresaId } : undefined,
+    },
+  );
   return response.data;
 };
 

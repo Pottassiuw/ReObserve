@@ -1,6 +1,6 @@
-// src/hooks/useReleasesManagement.ts
 import { useCallback } from "react";
-import { useReleaseStore, type Release } from "@/stores/releaseStore";
+import { useReleaseStore } from "@/stores/releaseStore";
+import type { Lancamento } from "@/types";
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissionsStore } from "@/stores/permissionsStore";
 import {
@@ -43,12 +43,21 @@ export const useReleasesManagement = () => {
     try {
       const empresaId = userType === "enterprise" ? userId : undefined;
       const data = await listarLancamentos(empresaId || undefined);
-      setReleases(data);
+
+      // CORREÇÃO: Verificar se data é um array, caso contrário usar array vazio
+      const releasesArray = Array.isArray(data) ? data : [];
+      console.log("Dados recebidos da API:", data);
+      console.log("Array de releases:", releasesArray);
+
+      setReleases(releasesArray);
     } catch (err: any) {
       const message =
         err.response?.data?.message || "Erro ao carregar lançamentos";
       setError(message);
       console.error("Erro ao carregar lançamentos:", err);
+
+      // CORREÇÃO: Em caso de erro, garantir que releases seja um array vazio
+      setReleases([]);
     } finally {
       setLoading(false);
     }
@@ -83,7 +92,7 @@ export const useReleasesManagement = () => {
 
   // Criar lançamento
   const createRelease = useCallback(
-    async (data: Partial<Release>) => {
+    async (data: Partial<Lancamento>) => {
       if (!canCreateRelease()) {
         setError("Você não tem permissão para criar lançamentos");
         throw new Error("Sem permissão");
@@ -111,7 +120,7 @@ export const useReleasesManagement = () => {
 
   // Atualizar lançamento
   const updateReleaseById = useCallback(
-    async (id: number, data: Partial<Release>) => {
+    async (id: number, data: Partial<Lancamento>) => {
       if (!canEditRelease()) {
         setError("Você não tem permissão para editar lançamentos");
         throw new Error("Sem permissão");
@@ -165,7 +174,7 @@ export const useReleasesManagement = () => {
   );
 
   return {
-    releases,
+    releases: Array.isArray(releases) ? releases : [], // CORREÇÃO: Garantir que sempre retorna um array
     currentRelease,
     isLoading,
     error,

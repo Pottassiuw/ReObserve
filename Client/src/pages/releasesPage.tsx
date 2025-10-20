@@ -1,4 +1,3 @@
-// src/pages/ReleasesPage.tsx
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,7 +44,6 @@ import {
 } from "lucide-react";
 import ReleaseModal from "@/components/releaseModal";
 import { useReleasesManagement } from "@/hooks/useReleasesManagement";
-import { usePermissionsStore } from "@/stores/permissionsStore";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function ReleasesPage() {
@@ -127,16 +125,16 @@ export default function ReleasesPage() {
   };
 
   // Calcular estatísticas
-  const totalReleases = releases.length;
-  const thisMonthReleases = releases.filter((r) => {
-    const date = new Date(r.data_lancamento);
-    const now = new Date();
-    return (
-      date.getMonth() === now.getMonth() &&
-      date.getFullYear() === now.getFullYear()
-    );
-  }).length;
-  const totalValue = releases.reduce((sum, r) => sum + (r.valor || 0), 0);
+  //  const totalReleases = releases.length;
+  //  const thisMonthReleases = releases.filter((r) => {
+  //    const date = new Date(r.data_lancamento);
+  //    const now = new Date();
+  //    return (
+  //      date.getMonth() === now.getMonth() &&
+  //      date.getFullYear() === now.getFullYear()
+  //    );
+  //  }).length;
+  //  const totalValue = releases.reduce((sum, r) => sum + (r.valor || 0), 0);
 
   if (!canView) {
     return (
@@ -180,7 +178,7 @@ export default function ReleasesPage() {
         )}
 
         {/* Cards de Resumo */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/*    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -195,7 +193,7 @@ export default function ReleasesPage() {
             </CardContent>
           </Card>
 
-          <Card>
+           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -208,8 +206,7 @@ export default function ReleasesPage() {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
+        <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -225,7 +222,7 @@ export default function ReleasesPage() {
             </CardContent>
           </Card>
         </div>
-
+          */}
         {/* Tabela de Lançamentos */}
         <Card>
           <CardHeader>

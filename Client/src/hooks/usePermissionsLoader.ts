@@ -1,13 +1,8 @@
-// src/hooks/usePermissionsLoader.ts
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissionsStore, Permissoes } from "@/stores/permissionsStore";
 import { retornarUsuario } from "@/api/endpoints/users";
 
-/**
- * Hook para carregar as permissões do usuário logado
- * Deve ser usado no componente raiz da aplicação ou em um provider
- */
 export const usePermissionsLoader = () => {
   const { userId, userType, isAuthenticated, admin } = useAuthStore();
   const { setPermissions, clearPermissions } = usePermissionsStore();
@@ -35,7 +30,6 @@ export const usePermissionsLoader = () => {
         return;
       }
 
-      // Para usuários, carregar permissões do backend
       if (userType === "user") {
         try {
           const userData = await retornarUsuario(userId);
@@ -46,7 +40,6 @@ export const usePermissionsLoader = () => {
             return;
           }
 
-          // Converter as permissões do grupo para o enum
           const permissions: Permissoes[] = userData.grupo.permissoes
             .map((perm: string) => Permissoes[perm as keyof typeof Permissoes])
             .filter(Boolean);
@@ -56,7 +49,6 @@ export const usePermissionsLoader = () => {
           console.log("✅ Permissões carregadas:", permissions);
         } catch (error) {
           console.error("Erro ao carregar permissões:", error);
-          // Em caso de erro, dar permissões mínimas
           setPermissions([Permissoes.lancamento, Permissoes.verLancamentos]);
         }
       }

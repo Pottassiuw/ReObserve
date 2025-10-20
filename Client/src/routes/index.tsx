@@ -11,6 +11,7 @@ import UserSettingsPage from "@/pages/user/user.config";
 import PeriodsPage from "@/pages/periodsPage";
 import PageNotFound from "@/pages/notFound";
 import ProtectedRoute from "./protectedRoutes";
+import CreateUserPage from "@/pages/user/user.register";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
           { path: "/releases", element: <ReleasesPage /> },
           { path: "/user/settings", element: <UserSettingsPage /> },
           { path: "/periods", element: <PeriodsPage /> },
+          { path: "/user/create", element: <CreateUserPage /> },
         ],
       },
     ],

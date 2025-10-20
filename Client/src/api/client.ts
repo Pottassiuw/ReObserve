@@ -2,7 +2,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 import { useAuthStore } from "@/stores/authStore";
-
+import { decodeJWT } from "@/utils/decoder";
 const Client = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
   withCredentials: true,
@@ -29,11 +29,16 @@ Client.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Limpa tudo
-      Cookies.remove("auth-token");
-      useAuthStore.getState().logout();
+      const token = Cookies.get("auth-token");
+      if (!token) return Promise.reject(error);
+      const decodedToken = decodeJWT(token);
+      if (decodedToken.type === "user") {
+        useAuthStore.getState().logout("user");
+      } else if (decodedToken.type === "enterprise") {
+        useAuthStore.getState().logout("enterprise");
+      }
     }
     return Promise.reject(error);
   },
 );
-
 export default Client;

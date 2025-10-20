@@ -45,14 +45,6 @@ export default function SettingsPage() {
     email: "",
   });
 
-  // Debug logs
-  useEffect(() => {
-    console.log("🔍 Debug - userId:", userId);
-    console.log("🔍 Debug - user:", user);
-    console.log("🔍 Debug - enterprise:", enterprise);
-    console.log("🔍 Debug - user?.empresaId:", user?.empresaId);
-  }, [userId, user, enterprise]);
-
   useEffect(() => {
     if (userId) {
       console.log("📞 Chamando retornarUsuario com ID:", userId);
@@ -136,23 +128,6 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        {/* Debug info - remover depois */}
-        <Alert className="bg-blue-50 border-blue-200">
-          <AlertDescription className="text-blue-800">
-            <strong>Debug:</strong>
-            <br />
-            userId: {userId || "null"}
-            <br />
-            user.nome: {user?.nome || "null"}
-            <br />
-            user.email: {user?.email || "null"}
-            <br />
-            user.empresaId: {user?.empresaId || "null"}
-            <br />
-            enterprise: {enterprise ? "carregado" : "null"}
-          </AlertDescription>
-        </Alert>
-
         {saveSuccess && (
           <Alert className="bg-green-50 border-green-200">
             <CheckCircle className="h-4 w-4 text-green-600" />
@@ -189,9 +164,6 @@ export default function SettingsPage() {
                     className="pl-10 border-indigo-100 focus:border-indigo-300"
                   />
                 </div>
-                <p className="text-xs text-gray-500">
-                  Valor atual: {userData.name}
-                </p>
               </div>
 
               <div className="space-y-2 md:col-span-2">
@@ -210,9 +182,6 @@ export default function SettingsPage() {
                     className="pl-10 border-indigo-100 focus:border-indigo-300"
                   />
                 </div>
-                <p className="text-xs text-gray-500">
-                  Valor atual: {userData.email}
-                </p>
               </div>
 
               {user.cpf && (

@@ -1,4 +1,3 @@
-// src/store/permissionsStore.ts
 import { create } from "zustand";
 
 export enum Permissoes {

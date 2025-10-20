@@ -1,4 +1,3 @@
-// src/store/periodStore.ts
 import { create } from "zustand";
 
 export interface Period {

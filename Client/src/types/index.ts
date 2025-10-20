@@ -6,6 +6,15 @@ export interface User {
   email: string;
   isAdmin: boolean | null;
   empresaId: number;
+  grupoId: number;
+}
+export interface Grupo {
+  id: number;
+  nome: string;
+  permissoes: string;
+  empresaId: number;
+  dataCriacao: Date;
+  dataAtualizacao: Date;
 }
 export interface Enterprise {
   id: number;

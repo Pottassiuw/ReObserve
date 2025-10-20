@@ -1,33 +1,17 @@
-// src/store/releaseStore.ts
 import { create } from "zustand";
-
-export interface Release {
-  id: number;
-  data_lancamento: string;
-  latitude: number;
-  longitude: number;
-  dataCriacao: string;
-  dataAtualizacao: string;
-  periodoId?: number;
-  notaFiscalId: number;
-  usuarioId: number;
-  empresaId: number;
-  valor?: number;
-  xml?: string;
-  imagem?: string;
-}
+import type { Lancamento } from "@/types";
 
 interface ReleaseStore {
-  releases: Release[];
-  currentRelease: Release | null;
+  releases: Lancamento[];
+  currentRelease: Lancamento | null;
   isLoading: boolean;
   error: string | null;
 
-  setReleases: (releases: Release[]) => void;
-  addRelease: (release: Release) => void;
-  updateRelease: (id: number, data: Partial<Release>) => void;
+  setReleases: (releases: Lancamento[]) => void;
+  addRelease: (release: Lancamento) => void;
+  updateRelease: (id: number, data: Partial<Lancamento>) => void;
   removeRelease: (id: number) => void;
-  setCurrentRelease: (release: Release | null) => void;
+  setCurrentRelease: (release: Lancamento | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearReleases: () => void;
