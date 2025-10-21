@@ -5,7 +5,7 @@ export interface User {
   nome: string;
   email: string;
   dataCriacao: Date;
-  isAdmin: boolean | null;
+  admin: boolean | null;
   empresaId: number;
   grupoId: number;
   grupo?: Grupo;
@@ -14,7 +14,7 @@ export interface User {
 export interface Grupo {
   id: number;
   nome: string;
-  permissoes: string;
+  permissoes: string[];
   empresaId: number;
   dataCriacao: Date;
   dataAtualizacao: Date;

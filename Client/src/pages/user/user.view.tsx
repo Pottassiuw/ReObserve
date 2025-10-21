@@ -18,7 +18,7 @@ export default function UserView() {
     retornarUsuarios(userId);
   }, [userId]);
 
-  const users = user ? user : [];
+  const users = Array.isArray(user) ? user : [];
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -103,9 +103,6 @@ export default function UserView() {
                         Função
                       </th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700">
-                        Status
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">
                         Data de Criação
                       </th>
                     </tr>
@@ -136,17 +133,18 @@ export default function UserView() {
                         <td className="py-3 px-4">
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              usuario.grupo?.nome === "admin"
+                              usuario.grupo?.nome.toLowerCase() === "admin"
                                 ? "bg-purple-100 text-purple-800"
-                                : usuario.grupo?.nome === "manager"
+                                : usuario.grupo?.nome.toLowerCase() ===
+                                    "operadores"
                                   ? "bg-blue-100 text-blue-800"
                                   : "bg-gray-100 text-gray-800"
                             }`}
                           >
                             {usuario.grupo?.nome === "admin"
                               ? "Administrador"
-                              : usuario.grupo?.nome === "manager"
-                                ? "Gerente"
+                              : usuario.grupo?.nome === "Operadores"
+                                ? "Operadores"
                                 : "Usuário"}
                           </span>
                         </td>

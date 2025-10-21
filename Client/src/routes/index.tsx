@@ -13,6 +13,7 @@ import PageNotFound from "@/pages/notFound";
 import ProtectedRoute from "./protectedRoutes";
 import CreateUserPage from "@/pages/user/user.register";
 import UserView from "@/pages/user/user.view";
+import EnterpriseGroups from "@/pages/enterprise/enterprise.groups";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
           { path: "/periods", element: <PeriodsPage /> },
           { path: "/user/create", element: <CreateUserPage /> },
           { path: "/users/view", element: <UserView /> },
+          { path: "/groups", element: <EnterpriseGroups /> },
         ],
       },
     ],

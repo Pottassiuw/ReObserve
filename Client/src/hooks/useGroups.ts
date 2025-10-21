@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { listarGrupos } from "@/api/endpoints/groups";
+import { deletarGrupo, listarGrupos } from "@/api/endpoints/groups";
 import type { Grupo } from "@/types";
 import { useAuthStore } from "@/stores/authStore";
-
 export const useGroups = () => {
   const [groups, setGroups] = useState<Grupo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -14,10 +13,8 @@ export const useGroups = () => {
       setError("Apenas empresas podem carregar grupos");
       return;
     }
-
     setIsLoading(true);
     setError(null);
-
     try {
       const data = await listarGrupos(userId);
       console.log("📦 Grupos carregados:", data);

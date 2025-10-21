@@ -21,6 +21,7 @@ import {
   Lock,
   UserPlus,
   Users,
+  Boxes,
 } from "lucide-react";
 import Logo from "@/assets/ProjectLogo.png";
 import { useAuthStore } from "@/stores/authStore";
@@ -196,6 +197,17 @@ export default function AppSidebar() {
                   >
                     <Users className="h-4 w-4 text-indigo-600" />
                     <span>Gerenciar Usuários</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    className="hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700"
+                    onClick={() => navigate("/groups")}
+                    isActive={location.pathname === "groups"}
+                    tooltip="Criar Usuário"
+                  >
+                    <Boxes className="h-4 w-4 text-indigo-600" />
+                    <span>Criar Grupos</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
