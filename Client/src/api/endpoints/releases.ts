@@ -1,47 +1,64 @@
 import Client from "@/api/client";
-import { uploadImagemAoStorage } from "@/utils/supabase-sdk"; // Importa do utils
-import type { NotaFiscal, Lancamento } from "@/types";
+import { uploadImagens } from "@/utils/supabase-sdk";
+import type { Lancamento, CriarLancamentoDTO } from "@/types";
 
-export interface CriarLancamentoPayload {
+export interface CriarLancamentoBackendPayload {
+  notaFiscal: {
+    numero: string;
+    valor: number;
+    dataEmissao: string;
+    xmlPath?: string;
+  };
   data_lancamento: string;
   latitude: number;
   longitude: number;
-  notaFiscal: Omit<
-    NotaFiscal,
-    "id" | "dataCriacao" | "empresaId" | "lancamento"
-  >;
-  periodoId?: number | null;
-
-  imagensFiles: File[];
+  periodoId?: number;
+  imagensUrls: string[];
+  usuarioId: number;
+  empresaId: number;
 }
 
 export const listarLancamentos = async (
-  empresaId?: number,
+  empresaId: number,
 ): Promise<Lancamento[]> => {
   const response = await Client.get(
-    "/releases/enterprise/:empresaId/releases",
-    {
-      params: empresaId ? { empresaId } : undefined,
-    },
+    `/releases/enterprise/${empresaId}/releases`,
   );
   return response.data;
 };
-
 export const retornarLancamento = async (id: number): Promise<Lancamento> => {
-  const response = await Client.get(`/Lancamentos/${id}`);
+  const response = await Client.get(`/lancamentos/${id}`);
   return response.data;
 };
 
 export const atualizarLancamento = async (
   id: number,
-  data: Partial<Lancamento>,
+  data: CriarLancamentoDTO,
 ): Promise<Lancamento> => {
-  const response = await Client.put(`/Lancamentos/${id}`, data);
+  const imagensUrls = await uploadImagens(data.imagensUrls as any);
+
+  const payload: CriarLancamentoBackendPayload = {
+    notaFiscal: {
+      numero: data.numeroNotaFiscal,
+      valor: data.valor,
+      dataEmissao: data.dataEmissao.toISOString(),
+      xmlPath: data.xmlPath,
+    },
+    data_lancamento: data.data_lancamento.toISOString(),
+    latitude: data.latitude,
+    longitude: data.longitude,
+    periodoId: data.periodoId,
+    imagensUrls,
+    usuarioId: data.usuarioId,
+    empresaId: data.empresaId,
+  };
+
+  const response = await Client.put(`/lancamentos/${id}`, payload);
   return response.data;
 };
 
 export const deletarLancamento = async (id: number): Promise<void> => {
-  await Client.delete(`/Lancamentos/${id}`);
+  await Client.delete(`/lancamentos/${id}`);
 };
 
 export const uploadXML = async (
@@ -49,40 +66,43 @@ export const uploadXML = async (
 ): Promise<{ xml: string; data: Partial<Lancamento> }> => {
   const formData = new FormData();
   formData.append("xml", file);
-  const response = await Client.post("/Lancamentos/upload-xml", formData, {
+  const response = await Client.post("/lancamentos/upload-xml", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return response.data;
 };
 
-export const criarLancamentoComUpload = async (
-  data: CriarLancamentoPayload,
+export const criarLancamento = async (
+  data: CriarLancamentoDTO,
 ): Promise<Lancamento> => {
-  const { imagensFiles, ...dadosLancamento } = data;
+  console.log("📤 Criando lançamento...", data);
 
-  if (!imagensFiles || imagensFiles.length === 0) {
+  if (!data.imagensUrls || data.imagensUrls.length === 0) {
     throw new Error("Pelo menos uma imagem é obrigatória.");
   }
 
-  console.log("Iniciando upload de imagens para o Supabase Storage...");
-  const uploadPromises = imagensFiles.map((file) =>
-    uploadImagemAoStorage(file),
-  );
-  const imageUrls = await Promise.all(uploadPromises);
-  console.log("Uploads concluídos. URLs:", imageUrls);
+  console.log("📸 Fazendo upload de", data.imagensUrls.length, "imagens...");
 
-  const dataParaBackend = {
-    ...dadosLancamento,
-    imageUrls,
+  const payload: CriarLancamentoBackendPayload = {
+    notaFiscal: {
+      numero: data.numeroNotaFiscal,
+      valor: data.valor,
+      dataEmissao: data.dataEmissao.toISOString(),
+      xmlPath: data.xmlPath,
+    },
+    data_lancamento: data.data_lancamento.toISOString(),
+    latitude: data.latitude,
+    longitude: data.longitude,
+    periodoId: data.periodoId,
+    imagensUrls: data.imagensUrls,
+    usuarioId: data.usuarioId,
+    empresaId: data.empresaId,
   };
 
-  const response = await Client.post("/Lancamentos", dataParaBackend);
-  return response.data;
-};
+  console.log("🚀 Enviando para o backend:", payload);
 
-export const criarLancamento = async (
-  data: Omit<CriarLancamentoPayload, "imagensFiles"> & { imageUrls: string[] },
-): Promise<Lancamento> => {
-  const response = await Client.post("/Lancamentos", data);
+  const response = await Client.post("/lancamentos", payload);
+
+  console.log("✅ Lançamento criado:", response.data);
   return response.data;
 };

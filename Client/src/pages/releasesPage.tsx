@@ -124,18 +124,6 @@ export default function ReleasesPage() {
     loadReleases();
   };
 
-  // Calcular estatísticas
-  //  const totalReleases = releases.length;
-  //  const thisMonthReleases = releases.filter((r) => {
-  //    const date = new Date(r.data_lancamento);
-  //    const now = new Date();
-  //    return (
-  //      date.getMonth() === now.getMonth() &&
-  //      date.getFullYear() === now.getFullYear()
-  //    );
-  //  }).length;
-  //  const totalValue = releases.reduce((sum, r) => sum + (r.valor || 0), 0);
-
   if (!canView) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
@@ -223,6 +211,7 @@ export default function ReleasesPage() {
           </Card>
         </div>
           */}
+
         {/* Tabela de Lançamentos */}
         <Card>
           <CardHeader>
@@ -264,11 +253,6 @@ export default function ReleasesPage() {
                         )}
                       </TableCell>
                       <TableCell>#{release.notaFiscalId}</TableCell>
-                      <TableCell>
-                        {release.valor
-                          ? `R$ ${release.valor.toFixed(2)}`
-                          : "N/A"}
-                      </TableCell>
                       <TableCell>
                         {release.latitude.toFixed(4)},{" "}
                         {release.longitude.toFixed(4)}
@@ -324,7 +308,6 @@ export default function ReleasesPage() {
           onOpenChange={setIsModalOpen}
           lancamento={editingRelease}
           onSalvar={handleModalSuccess}
-          readOnly={!canEdit && !canCreate}
         />
 
         {/* Delete Dialog */}

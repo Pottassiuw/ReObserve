@@ -91,9 +91,6 @@ export default function UserView() {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-3 px-4 font-medium text-gray-700">
-                        ID
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">
                         Nome
                       </th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700">
@@ -113,7 +110,6 @@ export default function UserView() {
                         key={usuario.id}
                         className="border-b hover:bg-gray-50"
                       >
-                        <td className="py-3 px-4 font-medium">{usuario.id}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center">
                             <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
@@ -131,21 +127,10 @@ export default function UserView() {
                           </div>
                         </td>
                         <td className="py-3 px-4">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              usuario.grupo?.nome.toLowerCase() === "admin"
-                                ? "bg-purple-100 text-purple-800"
-                                : usuario.grupo?.nome.toLowerCase() ===
-                                    "operadores"
-                                  ? "bg-blue-100 text-blue-800"
-                                  : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {usuario.grupo?.nome === "admin"
-                              ? "Administrador"
-                              : usuario.grupo?.nome === "Operadores"
-                                ? "Operadores"
-                                : "Usuário"}
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-400">
+                            {usuario.grupo?.nome
+                              ? usuario.grupo.nome
+                              : "Pendente..."}
                           </span>
                         </td>
                         <td className="py-3 px-4">

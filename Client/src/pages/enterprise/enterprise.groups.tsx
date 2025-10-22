@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,13 +18,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, Shield, Users, Edit, Trash2, Check, X } from "lucide-react";
+import { Plus, Shield, Edit, Trash2, Check, X } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { Permissoes } from "@/stores/permissionsStore";
-import { deletarGrupo, listarGrupos } from "@/api/endpoints/groups";
+import { criarGrupo, deletarGrupo, listarGrupos } from "@/api/endpoints/groups";
 import type { Grupo } from "@/types";
-import { useGroups } from "@/hooks/useGroups";
 import { useEnterpriseStore } from "@/stores/enterpriseStore";
 // Schema de validação com Zod
 const grupoSchema = z.object({
@@ -116,7 +116,6 @@ export default function EnterpriseGroups() {
     }
     setIsModalOpen(true);
   };
-
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingGrupo(null);
@@ -126,7 +125,6 @@ export default function EnterpriseGroups() {
     });
     setValidationErrors({});
   };
-
   const togglePermissao = (permissao: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -135,13 +133,10 @@ export default function EnterpriseGroups() {
         : [...prev.permissoes, permissao],
     }));
   };
-
   const handleSubmit = async () => {
-    // Limpar erros anteriores
     setValidationErrors({});
     setError(null);
-
-    // Validação com Zod
+    const toastId = toast.loading("Criando grupo");
     try {
       grupoSchema.parse(formData);
     } catch (err) {
@@ -156,46 +151,60 @@ export default function EnterpriseGroups() {
         return;
       }
     }
-
     try {
-      // TODO: Implementar criarGrupo e atualizarGrupo
-      // if (editingGrupo) {
-      //   await atualizarGrupo(editingGrupo.id, formData);
-      // } else {
-      //   await criarGrupo(userId, formData);
-      // }
-
+      if (!userId) return new Error("Id não existe");
+      const dados = {
+        nome: formData.nome,
+        permissoes: formData.permissoes,
+        empresaId: userId,
+      };
+      await criarGrupo(dados);
+      toast.success("Grupo Criado!", { id: toastId });
       console.log("✅ Salvando grupo:", formData);
       handleCloseModal();
       loadGrupos();
     } catch (err: any) {
       setError(err.message || "Erro ao salvar grupo");
+      toast.error("Erro ao criar grupo", { id: toastId });
     }
   };
-
   const handleDeleteClick = (id: number) => {
+    console.log("🗑️ handleDeleteClick chamado com ID:", id);
     setGrupoToDelete(id);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
-    if (grupoToDelete) {
-      try {
-        if (!enterprise) {
-          setError("Erro ao deletar grupo");
-          return;
-        }
-        await deletarGrupo(grupoToDelete);
-        console.log("Deletando grupo:", grupoToDelete);
-        setDeleteDialogOpen(false);
-        setGrupoToDelete(null);
-        loadGrupos();
-      } catch (err: any) {
-        setError(err.message || "Erro ao deletar grupo");
+    console.log("✅ confirmDelete chamado - grupoToDelete:", grupoToDelete);
+
+    const idToDelete = grupoToDelete;
+
+    if (!idToDelete) {
+      console.log("❌ grupoToDelete é null, abortando");
+      toast.error("Erro: ID do grupo não encontrado");
+      return;
+    }
+
+    const toastId = toast.loading("Deletando grupo...");
+    try {
+      if (!userId) {
+        console.log("❌ userId não existe");
+        toast.error("Erro: Usuário não identificado", { id: toastId });
+        return;
       }
+      console.log("🔄 Chamando deletarGrupo com ID:", idToDelete);
+      await deletarGrupo(idToDelete);
+      toast.success("Grupo deletado com sucesso!", { id: toastId });
+      console.log("✅ Grupo deletado com sucesso:", idToDelete);
+      setDeleteDialogOpen(false);
+      setGrupoToDelete(null);
+      loadGrupos();
+    } catch (err: any) {
+      console.error("❌ Erro ao deletar:", err);
+      toast.error(err.message || "Erro ao deletar grupo", { id: toastId });
+      setError(err.message || "Erro ao deletar grupo");
     }
   };
-
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -279,7 +288,10 @@ export default function EnterpriseGroups() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteClick(grupo.id)}
+                        onClick={(e) => {
+                          e.stopPropagation;
+                          handleDeleteClick(grupo.id);
+                        }}
                         className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />

@@ -1,10 +1,9 @@
 import Client from "@/api/client";
 import type { Grupo } from "@/types";
-import { Permissoes } from "@/stores/permissionsStore";
 
 interface GrupoPayload {
   nome: string;
-  permissoes: Permissoes;
+  permissoes: string[];
   empresaId: number;
 }
 

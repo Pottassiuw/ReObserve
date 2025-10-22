@@ -5,25 +5,25 @@ export interface User {
   nome: string;
   email: string;
   dataCriacao: Date;
-  admin: boolean | null;
+  admin: boolean;
   empresaId: number;
-  grupoId: number;
+  grupoId: number | null;
   grupo?: Grupo;
   lancamento?: Lancamento[];
 }
+
 export interface Grupo {
   id: number;
   nome: string;
   permissoes: string[];
   empresaId: number;
-  dataCriacao: Date;
-  dataAtualizacao: Date;
 }
+
 export interface Enterprise {
   id: number;
   cnpj: string;
   senha: string;
-  nomeFantasia: string;
+  nomeFantasia: string | null;
   razaoSocial: string;
   endereco: string;
   situacaoCadastral: string;
@@ -31,6 +31,7 @@ export interface Enterprise {
   CNAES: string;
   dataCriacao: string;
 }
+
 export interface Imagem {
   id: number;
   url: string;
@@ -38,6 +39,7 @@ export interface Imagem {
   dataAtualizacao: Date;
   lancamentoId: number;
 }
+
 export interface NotaFiscal {
   id: number;
   numero: string;
@@ -47,6 +49,7 @@ export interface NotaFiscal {
   dataCriacao: Date;
   empresaId: number;
 }
+
 export interface Lancamento {
   id: number;
   data_lancamento: string | Date;
@@ -62,4 +65,21 @@ export interface Lancamento {
   // Relações incluídas
   imagens: Imagem[];
   notaFiscal: NotaFiscal;
+}
+
+export interface CriarLancamentoDTO {
+  numeroNotaFiscal: string;
+  valor: number;
+  dataEmissao: Date;
+  xmlPath?: string;
+
+  latitude: number;
+  longitude: number;
+  data_lancamento: Date;
+
+  imagensUrls: string[];
+
+  usuarioId: number;
+  empresaId: number;
+  periodoId?: number;
 }
