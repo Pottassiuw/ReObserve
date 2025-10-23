@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import Cookies from "js-cookie";
 import {
   loginApi,
   logoutApi,
@@ -17,7 +16,7 @@ interface AuthState {
   userId: number | null;
   login: (
     type: "user" | "enterprise",
-    data: UserPayload | EnterprisePayload,
+    credentials: { email?: string; cnpj?: string; senha: string },
   ) => Promise<void>;
   logout: (type: "user" | "enterprise") => Promise<void>;
   checkAuth: () => void;
@@ -30,10 +29,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   userId: null,
   isAuthLoading: true,
 
-  login: async (type, data) => {
+  login: async (type, credentials) => {
     set({ isAuthLoading: true });
     try {
-      const result = await loginApi(type, data);
+      const result = await loginApi(type, credentials);
 
       if (!result.success) {
         throw new Error(result.error || "Erro ao fazer login");
@@ -60,55 +59,81 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ isAuthLoading: false });
     }
   },
-
   logout: async (type) => {
     await logoutApi(type);
     set({ isAuthenticated: false, userType: null, admin: false, userId: null });
   },
-
   checkAuth: async () => {
-    const token = Cookies.get("auth-token");
+    set({ isAuthLoading: true });
 
-    if (token) {
-      const decoded = decodeJWT(token);
+    try {
+      const token = localStorage.getItem("auth-token");
 
-      if (decoded && decoded.type && decoded.id) {
-        let isAdmin = false;
-
-        // Se for usuário, busca os dados para verificar admin
-        if (decoded.type === "user") {
-          try {
-            const userData = await retornarUsuario(decoded.id);
-            isAdmin = Boolean(userData?.admin);
-          } catch (error) {
-            console.error("Erro ao buscar dados do usuário:", error);
-          }
-        }
-
-        set({
-          isAuthenticated: true,
-          userType: decoded.type,
-          admin: isAdmin,
-          userId: decoded.id,
-        });
-      } else {
+      if (!token) {
         set({
           isAuthenticated: false,
           userType: null,
           admin: false,
           userId: null,
+          isAuthLoading: false,
         });
+        return;
       }
-    } else {
+
+      const decoded = decodeJWT(token);
+
+      const userId = decoded?.sub ? parseInt(decoded.sub, 10) : null;
+
+      if (!decoded || !decoded.type || !userId) {
+        console.log("❌ Token inválido:", { decoded, userId });
+        localStorage.removeItem("auth-token");
+        set({
+          isAuthenticated: false,
+          userType: null,
+          admin: false,
+          userId: null,
+          isAuthLoading: false,
+        });
+        return;
+      }
+
+      let isAdmin = false;
+
+      if (decoded.type === "user") {
+        try {
+          const userData = await retornarUsuario(userId);
+          isAdmin = Boolean(userData?.admin);
+        } catch (error) {
+          console.error("Erro ao buscar dados do usuário:", error);
+          localStorage.removeItem("auth-token");
+          set({
+            isAuthenticated: false,
+            userType: null,
+            admin: false,
+            userId: null,
+            isAuthLoading: false,
+          });
+          return;
+        }
+      }
+
+      set({
+        isAuthenticated: true,
+        userType: decoded.type,
+        admin: isAdmin,
+        userId: userId,
+        isAuthLoading: false,
+      });
+    } catch (error) {
+      console.error("Erro no checkAuth:", error);
       set({
         isAuthenticated: false,
         userType: null,
         admin: false,
         userId: null,
+        isAuthLoading: false,
       });
     }
-
-    set({ isAuthLoading: false });
   },
 }));
 

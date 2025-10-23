@@ -1,44 +1,36 @@
-// @/api/client.ts
 import axios from "axios";
-import Cookies from "js-cookie";
-import { useAuthStore } from "@/stores/authStore";
-import { decodeJWT } from "@/utils/decoder";
+import { setAuthToken } from "@/utils/supabase-sdk";
 const Client = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL,
-  withCredentials: true,
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
 });
-
-// Interceptor para adicionar token em todas as requisições
-Client.interceptors.request.use(
-  (config) => {
-    const token = Cookies.get("auth-token");
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
+console.log("🚀 Client.ts carregado");
+const storedToken = localStorage.getItem("auth-token");
+console.log(
+  "🔍 Token ao carregar client.ts:",
+  storedToken ? "EXISTE" : "NÃO EXISTE",
 );
 
-// Interceptor para tratar erros de autenticação
-Client.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Limpa tudo
-      const token = Cookies.get("auth-token");
-      if (!token) return Promise.reject(error);
-      const decodedToken = decodeJWT(token);
-      if (decodedToken.type === "user") {
-        useAuthStore.getState().logout("user");
-      } else if (decodedToken.type === "enterprise") {
-        useAuthStore.getState().logout("enterprise");
-      }
-    }
-    return Promise.reject(error);
-  },
-);
+if (storedToken) {
+  console.log("✅ Configurando token inicial nos headers");
+  Client.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
+  setAuthToken(storedToken);
+}
+
+if (storedToken) {
+  Client.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
+  setAuthToken(storedToken); // ⭐ IMPORTANTE: Também configura no Supabase
+}
+
+export function setGlobalAuthToken(token: string) {
+  localStorage.setItem("auth-token", token);
+  Client.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  setAuthToken(token);
+}
+
+export function clearGlobalAuthToken() {
+  localStorage.removeItem("auth-token");
+  delete Client.defaults.headers.common["Authorization"];
+  setAuthToken("");
+}
+
 export default Client;
