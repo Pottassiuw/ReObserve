@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useReleaseStore } from "@/stores/releaseStore";
-import type { Lancamento } from "@/types";
+import type { CriarLancamentoDTO, Lancamento } from "@/types";
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissionsStore } from "@/stores/permissionsStore";
 import {
@@ -29,6 +29,14 @@ export const useReleasesManagement = () => {
   const { userId, userType } = useAuthStore();
   const { canViewRelease, canCreateRelease, canEditRelease, canDeleteRelease } =
     usePermissionsStore();
+  if (!userId) throw new Error("Id deve ser fornecido");
+  const getEmpresaId = useCallback((): number => {
+    if (userType === "enterprise") {
+      return userId; // userId é o empresaId
+    }
+
+    return userId;
+  }, [userId, userType]);
 
   // Carregar lançamentos
   const loadReleases = useCallback(async () => {
@@ -41,29 +49,41 @@ export const useReleasesManagement = () => {
     setError(null);
 
     try {
-      const empresaId = userType === "enterprise" ? userId : undefined;
-      const data = await listarLancamentos(empresaId || undefined);
+      const empresaId = getEmpresaId();
 
-      // CORREÇÃO: Verificar se data é um array, caso contrário usar array vazio
+      console.log("🔍 Carregando releases...", {
+        userType,
+        userId,
+        empresaId,
+      });
+
+      const data = await listarLancamentos(empresaId);
+      console.log(data);
       const releasesArray = Array.isArray(data) ? data : [];
-      console.log("Dados recebidos da API:", data);
-      console.log("Array de releases:", releasesArray);
+      console.log("✅ Releases carregados:", releasesArray.length);
 
       setReleases(releasesArray);
     } catch (err: any) {
       const message =
-        err.response?.data?.message || "Erro ao carregar lançamentos";
+        err.response?.data?.message ||
+        err.message ||
+        "Erro ao carregar lançamentos";
       setError(message);
-      console.error("Erro ao carregar lançamentos:", err);
-
-      // CORREÇÃO: Em caso de erro, garantir que releases seja um array vazio
+      console.error("❌ Erro ao carregar lançamentos:", err);
       setReleases([]);
     } finally {
       setLoading(false);
     }
-  }, [canViewRelease, userId, userType, setReleases, setLoading, setError]);
+  }, [
+    canViewRelease,
+    userId,
+    userType,
+    getEmpresaId,
+    setReleases,
+    setLoading,
+    setError,
+  ]);
 
-  // Carregar lançamento específico
   const loadRelease = useCallback(
     async (id: number) => {
       if (!canViewRelease()) {
@@ -90,32 +110,44 @@ export const useReleasesManagement = () => {
     [canViewRelease, setCurrentRelease, setLoading, setError],
   );
 
-  // Criar lançamento
   const createRelease = useCallback(
-    async (data: Partial<Lancamento>) => {
+    async (data: CriarLancamentoDTO) => {
       if (!canCreateRelease()) {
         setError("Você não tem permissão para criar lançamentos");
         throw new Error("Sem permissão");
       }
 
+      const empresaId = getEmpresaId();
+
+      const releaseData: CriarLancamentoDTO = {
+        ...data,
+        usuarioId: userId,
+        empresaId: empresaId,
+      };
+
+      console.log("📝 Criando release com dados:", releaseData);
+
       setLoading(true);
       setError(null);
 
       try {
-        const newRelease = await criarLancamento(data);
+        const newRelease = await criarLancamento(releaseData);
         addRelease(newRelease);
+        console.log("✅ Release criado com sucesso:", newRelease);
         return newRelease;
       } catch (err: any) {
         const message =
-          err.response?.data?.message || "Erro ao criar lançamento";
+          err.response?.data?.message ||
+          err.message ||
+          "Erro ao criar lançamento";
         setError(message);
-        console.error("Erro ao criar lançamento:", err);
+        console.error("❌ Erro ao criar lançamento:", err);
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [canCreateRelease, addRelease, setLoading, setError],
+    [canCreateRelease, userId, getEmpresaId, addRelease, setLoading, setError],
   );
 
   // Atualizar lançamento
@@ -130,7 +162,10 @@ export const useReleasesManagement = () => {
       setError(null);
 
       try {
-        const updated = await atualizarLancamento(id, data);
+        const updated = await atualizarLancamento(
+          id,
+          data as CriarLancamentoDTO,
+        );
         updateRelease(id, updated);
         return updated;
       } catch (err: any) {
@@ -174,7 +209,7 @@ export const useReleasesManagement = () => {
   );
 
   return {
-    releases: Array.isArray(releases) ? releases : [], // CORREÇÃO: Garantir que sempre retorna um array
+    releases: Array.isArray(releases) ? releases : [],
     currentRelease,
     isLoading,
     error,
@@ -189,5 +224,8 @@ export const useReleasesManagement = () => {
     canView: canViewRelease(),
     canEdit: canEditRelease(),
     canDelete: canDeleteRelease(),
+    // Expor empresaId e userId para uso nos componentes
+    empresaId: getEmpresaId(),
+    usuarioId: userId,
   };
 };

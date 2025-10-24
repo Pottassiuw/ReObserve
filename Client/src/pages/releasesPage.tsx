@@ -32,19 +32,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Plus,
-  MoreVertical,
-  FileText,
-  Calendar,
-  MapPin,
-  Edit,
-  Trash2,
-  Eye,
-} from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Eye } from "lucide-react";
 import ReleaseModal from "@/components/releaseModal";
 import { useReleasesManagement } from "@/hooks/useReleasesManagement";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
 
 export default function ReleasesPage() {
   const {
@@ -52,12 +44,15 @@ export default function ReleasesPage() {
     isLoading,
     error,
     loadReleases,
+    createRelease,
     deleteRelease,
     setCurrentRelease,
     canCreate,
     canEdit,
     canDelete,
     canView,
+    empresaId,
+    usuarioId,
   } = useReleasesManagement();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,11 +64,11 @@ export default function ReleasesPage() {
     if (canView) {
       loadReleases();
     }
-  }, [canView]);
+  }, [canView, loadReleases]);
 
   const handleNew = () => {
     if (!canCreate) {
-      alert("Você não tem permissão para criar lançamentos");
+      toast.error("Você não tem permissão para criar lançamentos");
       return;
     }
     setEditingRelease(null);
@@ -83,7 +78,7 @@ export default function ReleasesPage() {
 
   const handleEdit = (release: any) => {
     if (!canEdit) {
-      alert("Você não tem permissão para editar lançamentos");
+      toast.error("Você não tem permissão para editar lançamentos");
       return;
     }
     setEditingRelease(release);
@@ -99,7 +94,7 @@ export default function ReleasesPage() {
 
   const handleDeleteClick = (id: number) => {
     if (!canDelete) {
-      alert("Você não tem permissão para deletar lançamentos");
+      toast.error("Você não tem permissão para deletar lançamentos");
       return;
     }
     setReleaseToDelete(id);
@@ -112,16 +107,24 @@ export default function ReleasesPage() {
         await deleteRelease(releaseToDelete);
         setDeleteDialogOpen(false);
         setReleaseToDelete(null);
+        toast.success("Lançamento excluído com sucesso!");
       } catch (error) {
         console.error("Erro ao deletar:", error);
+        toast.error("Erro ao excluir lançamento");
       }
     }
   };
 
-  const handleModalSuccess = () => {
-    setIsModalOpen(false);
-    setEditingRelease(null);
-    loadReleases();
+  const handleModalSave = async (dados: any) => {
+    try {
+      await createRelease(dados);
+      setIsModalOpen(false);
+      setEditingRelease(null);
+      loadReleases();
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      // O erro já é tratado no hook e exibido via toast
+    }
   };
 
   if (!canView) {
@@ -165,53 +168,6 @@ export default function ReleasesPage() {
           </Alert>
         )}
 
-        {/* Cards de Resumo */}
-        {/*    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {totalReleases}
-                  </p>
-                </div>
-                <FileText className="w-8 h-8 text-indigo-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Este Mês</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {thisMonthReleases}
-                  </p>
-                </div>
-                <Calendar className="w-8 h-8 text-indigo-600" />
-              </div>
-            </CardContent>
-          </Card>
-        <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Valor Total
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    R$ {totalValue.toFixed(2)}
-                  </p>
-                </div>
-                <MapPin className="w-8 h-8 text-indigo-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-          */}
-
         {/* Tabela de Lançamentos */}
         <Card>
           <CardHeader>
@@ -252,10 +208,19 @@ export default function ReleasesPage() {
                           "pt-BR",
                         )}
                       </TableCell>
-                      <TableCell>#{release.notaFiscalId}</TableCell>
                       <TableCell>
-                        {release.latitude.toFixed(4)},{" "}
-                        {release.longitude.toFixed(4)}
+                        {release.notaFiscal?.numero ||
+                          release.notaFiscalId ||
+                          "-"}
+                      </TableCell>
+                      <TableCell>
+                        {release.notaFiscal?.valor
+                          ? `R$ ${release.notaFiscal.valor.toFixed(2)}`
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {release.latitude?.toFixed(4)},{" "}
+                        {release.longitude?.toFixed(4)}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -302,12 +267,14 @@ export default function ReleasesPage() {
           </CardContent>
         </Card>
 
-        {/* Modal */}
+        {/* Modal - CORRIGIDO: Passar empresaId e usuarioId do hook */}
         <ReleaseModal
           open={isModalOpen}
           onOpenChange={setIsModalOpen}
           lancamento={editingRelease}
-          onSalvar={handleModalSuccess}
+          onSalvar={handleModalSave}
+          usuarioId={usuarioId}
+          empresaId={empresaId}
         />
 
         {/* Delete Dialog */}

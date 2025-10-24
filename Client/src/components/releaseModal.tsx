@@ -102,7 +102,6 @@ const ModalLancamento = ({
   useEffect(() => {
     if (!open) {
       pararCamera();
-      // Limpar object URLs
       previews.forEach((url) => {
         if (url.startsWith("blob:")) {
           URL.revokeObjectURL(url);
@@ -212,7 +211,6 @@ const ModalLancamento = ({
     setValidationErrors({});
 
     try {
-      // Validar com Zod
       lancamentoSchema.parse({
         ...formData,
         imagens,
@@ -222,16 +220,12 @@ const ModalLancamento = ({
       const toastId = toast.loading("Fazendo upload das imagens...");
 
       try {
-        // Upload das imagens para o Supabase
         const imageUrls = await uploadImagens(imagens);
-
         toast.success("Upload concluído!", { id: toastId });
 
-        // Obter localização (você pode usar geolocation API aqui)
         const latitude = -23.5505 + (Math.random() - 0.5) * 0.01;
         const longitude = -46.6333 + (Math.random() - 0.5) * 0.01;
 
-        // Criar DTO para enviar ao backend
         const dados: CriarLancamentoDTO = {
           // Dados da nota fiscal
           numeroNotaFiscal: formData.numeroNotaFiscal,

@@ -24,11 +24,13 @@ export const listarLancamentos = async (
   const response = await Client.get(
     `/releases/enterprise/${empresaId}/releases`,
   );
-  return response.data;
+
+  return response.data?.data || response.data || [];
 };
+
 export const retornarLancamento = async (id: number): Promise<Lancamento> => {
-  const response = await Client.get(`/lancamentos/${id}`);
-  return response.data;
+  const response = await Client.get(`/releases/${id}`);
+  return response.data?.data || response.data;
 };
 
 export const atualizarLancamento = async (
@@ -53,12 +55,12 @@ export const atualizarLancamento = async (
     empresaId: data.empresaId,
   };
 
-  const response = await Client.put(`/lancamentos/${id}`, payload);
-  return response.data;
+  const response = await Client.put(`/releases/${id}`, payload);
+  return response.data?.data || response.data;
 };
 
 export const deletarLancamento = async (id: number): Promise<void> => {
-  await Client.delete(`/lancamentos/${id}`);
+  await Client.delete(`/releases/${id}`);
 };
 
 export const uploadXML = async (
@@ -66,10 +68,10 @@ export const uploadXML = async (
 ): Promise<{ xml: string; data: Partial<Lancamento> }> => {
   const formData = new FormData();
   formData.append("xml", file);
-  const response = await Client.post("/lancamentos/upload-xml", formData, {
+  const response = await Client.post("/releases/upload-xml", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  return response.data;
+  return response.data?.data || response.data;
 };
 
 export const criarLancamento = async (
@@ -81,7 +83,15 @@ export const criarLancamento = async (
     throw new Error("Pelo menos uma imagem é obrigatória.");
   }
 
-  console.log("📸 Fazendo upload de", data.imagensUrls.length, "imagens...");
+  if (!data.empresaId) {
+    throw new Error("ID da empresa é obrigatório.");
+  }
+
+  if (!data.usuarioId) {
+    throw new Error("ID do usuário é obrigatório.");
+  }
+
+  console.log("📸 Enviando", data.imagensUrls.length, "URLs de imagens...");
 
   const payload: CriarLancamentoBackendPayload = {
     notaFiscal: {
@@ -101,8 +111,9 @@ export const criarLancamento = async (
 
   console.log("🚀 Enviando para o backend:", payload);
 
-  const response = await Client.post("/lancamentos", payload);
+  const response = await Client.post("/releases/enterprise", payload);
 
   console.log("✅ Lançamento criado:", response.data);
-  return response.data;
+
+  return response.data?.data || response.data;
 };

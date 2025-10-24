@@ -1,10 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { base64ToBlob } from "./formatters";
-
+import { v4 as uuidV4 } from "uuid";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 const BUCKET_NAME = "Imagens";
-
 let customToken: string | null = null;
 
 export function setAuthToken(token: string) {
@@ -34,7 +33,8 @@ export const uploadImagens = async (
     const fileName = `${Date.now()}-${Math.random()
       .toString(36)
       .substring(2)}.jpg`;
-    const filePath = `${fileName}`;
+    const identifierUUID = uuidV4();
+    const filePath = `${identifierUUID}/${fileName}`;
 
     const { error } = await supabase.storage
       .from(BUCKET_NAME)
