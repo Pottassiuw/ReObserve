@@ -12,29 +12,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Camera,
-  Upload,
-  Trash2,
-  Image as ImageIcon,
-  Loader2,
-} from "lucide-react";
+import { Camera, Upload, Trash2, ImageIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Lancamento, CriarLancamentoDTO } from "@/types/index";
 import { uploadImagens } from "@/utils/supabase-sdk";
 
-interface ModalLancamentoProps {
+interface ReleaseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  lancamento: Lancamento | null;
-  onSalvar: (dados: CriarLancamentoDTO) => void;
+  release: Lancamento | null;
+  mode: "view" | "edit" | "create";
+  onSave: (data: CriarLancamentoDTO) => void;
   usuarioId: number;
   empresaId: number;
 }
 
-// Schema de validação com Zod
-const lancamentoSchema = z.object({
-  numeroNotaFiscal: z.string().min(1, "Número da nota fiscal é obrigatório"),
+const validationSchema = z.object({
+  numeroNotaFiscal: z.string().min(1, "Número da nota é obrigatório"),
   valor: z
     .string()
     .min(1, "Valor é obrigatório")
@@ -42,20 +36,23 @@ const lancamentoSchema = z.object({
       message: "Digite um valor válido maior que zero",
     }),
   dataEmissao: z.string().min(1, "Data de emissão é obrigatória"),
-  xmlPath: z.string().optional(),
   imagens: z
     .array(z.any())
     .min(1, "Adicione pelo menos uma imagem da nota fiscal"),
 });
 
-const ModalLancamento = ({
+const ReleaseModal = ({
   open,
   onOpenChange,
-  lancamento,
-  onSalvar,
+  release,
+  mode,
+  onSave,
   usuarioId,
   empresaId,
-}: ModalLancamentoProps) => {
+}: ReleaseModalProps) => {
+  const isViewMode = mode === "view";
+  const isEditMode = mode === "edit";
+
   const [formData, setFormData] = useState({
     numeroNotaFiscal: "",
     valor: "",
@@ -63,50 +60,43 @@ const ModalLancamento = ({
     xmlPath: "",
   });
 
-  const [imagens, setImagens] = useState<(File | string)[]>([]);
+  const [images, setImages] = useState<(File | string)[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  const [validationErrors, setValidationErrors] = useState<
-    Record<string, string>
-  >({});
-  const [modoCamera, setModoCamera] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Carregar dados do lançamento
   useEffect(() => {
-    if (lancamento) {
+    if (release) {
       setFormData({
-        numeroNotaFiscal: lancamento.notaFiscal.numero || "",
-        valor: lancamento.notaFiscal.valor?.toString() || "",
-        dataEmissao: lancamento.notaFiscal.dataEmissao
-          ? new Date(lancamento.notaFiscal.dataEmissao)
-              .toISOString()
-              .split("T")[0]
+        numeroNotaFiscal: release.notaFiscal?.numero || "",
+        valor: release.notaFiscal?.valor?.toString() || "",
+        dataEmissao: release.notaFiscal?.dataEmissao
+          ? new Date(release.notaFiscal.dataEmissao).toISOString().split("T")[0]
           : "",
-        xmlPath: lancamento.notaFiscal.xmlPath || "",
+        xmlPath: release.notaFiscal?.xmlPath || "",
       });
 
-      // Carregar imagens existentes
-      if (lancamento.imagens && lancamento.imagens.length > 0) {
-        const urls = lancamento.imagens.map((img) => img.url);
-        setImagens(urls);
+      if (release.imagens && release.imagens.length > 0) {
+        const urls = release.imagens.map((img) => img.url);
+        setImages(urls);
         setPreviews(urls);
       }
     } else {
       resetForm();
     }
-  }, [lancamento, open]);
+  }, [release, open]);
 
+  // Cleanup ao fechar
   useEffect(() => {
     if (!open) {
-      pararCamera();
-      previews.forEach((url) => {
-        if (url.startsWith("blob:")) {
-          URL.revokeObjectURL(url);
-        }
-      });
+      stopCamera();
+      cleanupPreviews();
     }
   }, [open]);
 
@@ -117,13 +107,22 @@ const ModalLancamento = ({
       dataEmissao: "",
       xmlPath: "",
     });
-    setImagens([]);
+    setImages([]);
     setPreviews([]);
-    setValidationErrors({});
-    setModoCamera(false);
+    setErrors({});
+    setIsCameraActive(false);
   };
 
-  const iniciarCamera = async () => {
+  const cleanupPreviews = () => {
+    previews.forEach((url) => {
+      if (url.startsWith("blob:")) {
+        URL.revokeObjectURL(url);
+      }
+    });
+  };
+
+  // Câmera
+  const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
@@ -132,49 +131,47 @@ const ModalLancamento = ({
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
-      setModoCamera(true);
+      setIsCameraActive(true);
     } catch (error) {
-      console.error("Erro ao acessar a câmera:", error);
-      toast.error(
-        "Não foi possível acessar a câmera. Verifique as permissões.",
-      );
+      console.error("Erro ao acessar câmera:", error);
+      toast.error("Não foi possível acessar a câmera");
     }
   };
 
-  const pararCamera = () => {
+  const stopCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
-    setModoCamera(false);
+    setIsCameraActive(false);
   };
 
-  const capturarFoto = () => {
-    if (videoRef.current) {
-      const canvas = document.createElement("canvas");
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      const context = canvas.getContext("2d");
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
 
-      if (context) {
-        context.drawImage(videoRef.current, 0, 0);
-        const base64 = canvas.toDataURL("image/jpeg", 0.8);
+    const canvas = document.createElement("canvas");
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    const context = canvas.getContext("2d");
 
-        setImagens((prev) => [...prev, base64]);
-        setPreviews((prev) => [...prev, base64]);
-        pararCamera();
-        toast.success("Foto capturada!");
-      }
+    if (context) {
+      context.drawImage(videoRef.current, 0, 0);
+      const base64 = canvas.toDataURL("image/jpeg", 0.8);
+      setImages((prev) => [...prev, base64]);
+      setPreviews((prev) => [...prev, base64]);
+      stopCamera();
+      toast.success("Foto capturada!");
     }
   };
 
+  // Upload de arquivos
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
 
     Array.from(files).forEach((file) => {
       if (file.type.startsWith("image/")) {
-        setImagens((prev) => [...prev, file]);
+        setImages((prev) => [...prev, file]);
         setPreviews((prev) => [...prev, URL.createObjectURL(file)]);
       }
     });
@@ -184,75 +181,64 @@ const ModalLancamento = ({
 
   const handleXmlUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFormData((prev) => ({
-          ...prev,
-          xmlPath: e.target?.result as string,
-        }));
-        toast.success("XML carregado!");
-      };
-      reader.readAsText(file);
-    }
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setFormData((prev) => ({
+        ...prev,
+        xmlPath: e.target?.result as string,
+      }));
+      toast.success("XML carregado!");
+    };
+    reader.readAsText(file);
     event.target.value = "";
   };
 
-  const removerImagem = (index: number) => {
+  const removeImage = (index: number) => {
     if (previews[index]?.startsWith("blob:")) {
       URL.revokeObjectURL(previews[index]);
     }
-
-    setImagens((prev) => prev.filter((_, i) => i !== index));
+    setImages((prev) => prev.filter((_, i) => i !== index));
     setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSalvar = async () => {
-    setValidationErrors({});
+  // Salvar
+  const handleSave = async () => {
+    setErrors({});
 
     try {
-      lancamentoSchema.parse({
-        ...formData,
-        imagens,
-      });
+      validationSchema.parse({ ...formData, imagens: images });
 
       setIsUploading(true);
       const toastId = toast.loading("Fazendo upload das imagens...");
 
       try {
-        const imageUrls = await uploadImagens(imagens);
+        const imageUrls = await uploadImagens(images);
         toast.success("Upload concluído!", { id: toastId });
 
         const latitude = -23.5505 + (Math.random() - 0.5) * 0.01;
         const longitude = -46.6333 + (Math.random() - 0.5) * 0.01;
 
-        const dados: CriarLancamentoDTO = {
-          // Dados da nota fiscal
+        const data: CriarLancamentoDTO = {
           numeroNotaFiscal: formData.numeroNotaFiscal,
           valor: parseFloat(formData.valor),
           dataEmissao: new Date(formData.dataEmissao),
           xmlPath: formData.xmlPath || undefined,
-
-          // Dados do lançamento
           latitude,
           longitude,
           data_lancamento: new Date(),
-
-          // URLs das imagens
           imagensUrls: imageUrls,
-
-          // IDs relacionados
           usuarioId,
           empresaId,
         };
 
-        onSalvar(dados);
+        onSave(data);
         resetForm();
         onOpenChange(false);
-        toast.success("Lançamento salvo com sucesso!");
       } catch (uploadError: any) {
         console.error("Erro no upload:", uploadError);
-        toast.error(uploadError.message || "Erro ao fazer upload das imagens", {
+        toast.error(uploadError.message || "Erro ao fazer upload", {
           id: toastId,
         });
       } finally {
@@ -260,15 +246,26 @@ const ModalLancamento = ({
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
-        const errors: Record<string, string> = {};
+        const validationErrors: Record<string, string> = {};
         err.errors.forEach((error) => {
           if (error.path[0]) {
-            errors[error.path[0] as string] = error.message;
+            validationErrors[error.path[0] as string] = error.message;
           }
         });
-        setValidationErrors(errors);
+        setErrors(validationErrors);
       }
     }
+  };
+
+  const getTitle = () => {
+    if (isViewMode) return "Detalhes do Lançamento";
+    if (isEditMode) return "Editar Lançamento";
+    return "Novo Lançamento";
+  };
+
+  const getDescription = () => {
+    if (isViewMode) return "Visualize os dados da nota fiscal";
+    return "Preencha os dados da nota fiscal e adicione fotos";
   };
 
   return (
@@ -276,56 +273,50 @@ const ModalLancamento = ({
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-indigo-600">
-            {lancamento ? "Editar Lançamento" : "Novo Lançamento"}
+            {getTitle()}
           </DialogTitle>
-          <DialogDescription>
-            Preencha os dados da nota fiscal e adicione fotos
-          </DialogDescription>
+          <DialogDescription>{getDescription()}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Dados da Nota Fiscal */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="numeroNotaFiscal">Nº da Nota Fiscal *</Label>
+              <Label htmlFor="numeroNotaFiscal">Nº da Nota Fiscal</Label>
               <Input
                 id="numeroNotaFiscal"
-                type="text"
                 value={formData.numeroNotaFiscal}
                 onChange={(e) =>
                   setFormData({ ...formData, numeroNotaFiscal: e.target.value })
                 }
-                placeholder="Ex: 123456"
-                className={
-                  validationErrors.numeroNotaFiscal ? "border-red-500" : ""
-                }
+                disabled={isViewMode}
+                className={errors.numeroNotaFiscal ? "border-red-500" : ""}
               />
-              {validationErrors.numeroNotaFiscal && (
+              {errors.numeroNotaFiscal && (
                 <p className="text-sm text-red-600">
-                  {validationErrors.numeroNotaFiscal}
+                  {errors.numeroNotaFiscal}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="valor">Valor (R$) *</Label>
+              <Label htmlFor="valor">Valor (R$)</Label>
               <Input
                 id="valor"
-                type="text"
                 value={formData.valor}
                 onChange={(e) =>
                   setFormData({ ...formData, valor: e.target.value })
                 }
-                placeholder="0.00"
-                className={validationErrors.valor ? "border-red-500" : ""}
+                disabled={isViewMode}
+                className={errors.valor ? "border-red-500" : ""}
               />
-              {validationErrors.valor && (
-                <p className="text-sm text-red-600">{validationErrors.valor}</p>
+              {errors.valor && (
+                <p className="text-sm text-red-600">{errors.valor}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dataEmissao">Data de Emissão *</Label>
+              <Label htmlFor="dataEmissao">Data de Emissão</Label>
               <Input
                 id="dataEmissao"
                 type="date"
@@ -333,95 +324,100 @@ const ModalLancamento = ({
                 onChange={(e) =>
                   setFormData({ ...formData, dataEmissao: e.target.value })
                 }
-                className={validationErrors.dataEmissao ? "border-red-500" : ""}
+                disabled={isViewMode}
+                className={errors.dataEmissao ? "border-red-500" : ""}
               />
-              {validationErrors.dataEmissao && (
-                <p className="text-sm text-red-600">
-                  {validationErrors.dataEmissao}
-                </p>
+              {errors.dataEmissao && (
+                <p className="text-sm text-red-600">{errors.dataEmissao}</p>
               )}
             </div>
           </div>
 
           {/* XML Upload */}
-          <div className="space-y-2">
-            <Label htmlFor="xml">XML da Nota Fiscal (Opcional)</Label>
-            <div className="flex gap-2">
-              <Input
-                id="xml"
-                value={formData.xmlPath ? "Arquivo XML carregado ✓" : ""}
-                placeholder="Faça upload do arquivo XML"
-                readOnly
-                className="flex-1 cursor-pointer"
-                onClick={() => document.getElementById("xmlFile")?.click()}
-              />
-              <input
-                type="file"
-                id="xmlFile"
-                accept=".xml"
-                onChange={handleXmlUpload}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => document.getElementById("xmlFile")?.click()}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Upload XML
-              </Button>
+          {!isViewMode && (
+            <div className="space-y-2">
+              <Label htmlFor="xml">XML da Nota Fiscal (Opcional)</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="xml"
+                  value={formData.xmlPath ? "Arquivo XML carregado ✓" : ""}
+                  placeholder="Faça upload do arquivo XML"
+                  readOnly
+                  className="flex-1 cursor-pointer"
+                  onClick={() => document.getElementById("xmlFile")?.click()}
+                />
+                <input
+                  type="file"
+                  id="xmlFile"
+                  accept=".xml"
+                  onChange={handleXmlUpload}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById("xmlFile")?.click()}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload XML
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Seção de Imagens */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Fotos da Nota Fiscal *</Label>
+              <Label>Fotos da Nota Fiscal</Label>
               <span className="text-sm text-gray-500">
-                {imagens.length} foto(s) adicionada(s)
+                {images.length} foto(s)
               </span>
             </div>
 
-            {/* Botões de Ação */}
-            <div className="flex gap-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex-1"
-                disabled={isUploading}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Selecionar Arquivos
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={modoCamera ? pararCamera : iniciarCamera}
-                className="flex-1"
-                disabled={isUploading}
-              >
-                <Camera className="w-4 h-4 mr-2" />
-                {modoCamera ? "Fechar Câmera" : "Usar Câmera"}
-              </Button>
-            </div>
+            {/* Botões de Ação - apenas em modo de edição/criação */}
+            {!isViewMode && (
+              <>
+                <div className="flex gap-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-1"
+                    disabled={isUploading}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Selecionar Arquivos
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={isCameraActive ? stopCamera : startCamera}
+                    className="flex-1"
+                    disabled={isUploading}
+                  >
+                    <Camera className="w-4 h-4 mr-2" />
+                    {isCameraActive ? "Fechar Câmera" : "Usar Câmera"}
+                  </Button>
+                </div>
 
-            {validationErrors.imagens && (
-              <Alert variant="destructive">
-                <AlertDescription>{validationErrors.imagens}</AlertDescription>
-              </Alert>
+                {errors.imagens && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{errors.imagens}</AlertDescription>
+                  </Alert>
+                )}
+              </>
             )}
 
             {/* Preview da Câmera */}
-            {modoCamera && (
+            {isCameraActive && (
               <Card className="border-2 border-indigo-200">
                 <CardContent className="p-4">
                   <div className="space-y-3">
@@ -432,7 +428,7 @@ const ModalLancamento = ({
                       className="w-full h-80 object-cover rounded-lg bg-black"
                     />
                     <Button
-                      onClick={capturarFoto}
+                      onClick={capturePhoto}
                       className="w-full bg-indigo-600 hover:bg-indigo-700"
                       size="lg"
                     >
@@ -455,18 +451,19 @@ const ModalLancamento = ({
                         alt={`Nota fiscal ${index + 1}`}
                         className="w-full h-48 object-cover"
                       />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => removerImagem(index)}
-                          className="gap-2"
-                          disabled={isUploading}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Remover
-                        </Button>
-                      </div>
+                      {!isViewMode && (
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removeImage(index)}
+                            disabled={isUploading}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Remover
+                          </Button>
+                        </div>
+                      )}
                       <div className="absolute top-2 right-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded">
                         {index + 1}
                       </div>
@@ -477,17 +474,19 @@ const ModalLancamento = ({
             )}
 
             {/* Estado Vazio */}
-            {previews.length === 0 && !modoCamera && (
+            {previews.length === 0 && !isCameraActive && (
               <Card className="border-2 border-dashed border-gray-300">
                 <CardContent className="p-12 text-center">
                   <ImageIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 mb-2 font-medium">
                     Nenhuma imagem adicionada
                   </p>
-                  <p className="text-sm text-gray-500">
-                    Adicione fotos da nota fiscal usando a câmera ou
-                    selecionando arquivos
-                  </p>
+                  {!isViewMode && (
+                    <p className="text-sm text-gray-500">
+                      Adicione fotos da nota fiscal usando a câmera ou
+                      selecionando arquivos
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -504,26 +503,28 @@ const ModalLancamento = ({
             }}
             disabled={isUploading}
           >
-            Cancelar
+            {isViewMode ? "Fechar" : "Cancelar"}
           </Button>
-          <Button
-            onClick={handleSalvar}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-32"
-            disabled={isUploading}
-          >
-            {isUploading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Enviando...
-              </>
-            ) : (
-              <>{lancamento ? "Atualizar" : "Salvar"} Lançamento</>
-            )}
-          </Button>
+          {!isViewMode && (
+            <Button
+              onClick={handleSave}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-32"
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>{isEditMode ? "Atualizar" : "Salvar"} Lançamento</>
+              )}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
   );
 };
 
-export default ModalLancamento;
+export default ReleaseModal;

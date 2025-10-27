@@ -44,41 +44,40 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Plus,
   MoreVertical,
   Lock,
   Unlock,
-  Edit,
   Trash2,
   Eye,
   Calendar,
   CheckCircle,
   XCircle,
 } from "lucide-react";
+import { toast } from "sonner";
+import ClosePeriodModal from "@/components/closePeriodModal";
+import ViewPeriodModal from "@/components/viewPeriodModal";
+import {
+  listarPeriodos,
+  buscarPeriodo,
+  criarPeriodo,
+  reabrirPeriodo,
+  deletarPeriodo,
+} from "@/api/endpoints/periods";
 import { usePeriodsManagement } from "@/hooks/usePeriodsManagement";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function PeriodsPage() {
-  const {
-    periods,
-    isLoading,
-    error,
-    loadPeriods,
-    createPeriod,
-    updatePeriod,
-    deletePeriod,
-    closePeriod,
-    reopenPeriod,
-    canCreate,
-    canEdit,
-    canDelete,
-    canView,
-  } = usePeriodsManagement();
+  const { canCreate, canEdit, canDelete, canView } = usePeriodsManagement();
+
+  const [periods, setPeriods] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -88,10 +87,6 @@ export default function PeriodsPage() {
   const [formData, setFormData] = useState({
     dataInicio: "",
     dataFim: "",
-    observacoes: "",
-  });
-
-  const [closeData, setCloseData] = useState({
     observacoes: "",
   });
 
@@ -105,6 +100,20 @@ export default function PeriodsPage() {
     }
   }, [canView]);
 
+  const loadPeriods = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await listarPeriodos();
+      setPeriods(data);
+    } catch (err: any) {
+      console.error("Erro ao carregar períodos:", err);
+      setError(err.message || "Erro ao carregar períodos");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       dataInicio: "",
@@ -115,101 +124,80 @@ export default function PeriodsPage() {
 
   const handleCreate = async () => {
     if (!canCreate) {
-      alert("Você não tem permissão para criar períodos");
+      toast.error("Você não tem permissão para criar períodos");
+      return;
+    }
+
+    if (!formData.dataInicio || !formData.dataFim) {
+      toast.error("Preencha as datas de início e fim");
       return;
     }
 
     try {
-      await createPeriod({
-        dataInicio: formData.dataInicio,
-        dataFim: formData.dataFim,
-        observacoes: formData.observacoes,
-        status: "aberto",
-      } as any);
+      await criarPeriodo(formData);
+      toast.success("Período criado com sucesso!");
       setIsCreateDialogOpen(false);
       resetForm();
       loadPeriods();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao criar período:", error);
+      toast.error(error.response?.data?.message || "Erro ao criar período");
     }
   };
 
-  const handleEdit = async () => {
-    if (!canEdit || !selectedPeriod) {
-      alert("Você não tem permissão para editar períodos");
+  const handleView = async (period: any) => {
+    try {
+      const detailedPeriod = await buscarPeriodo(period.id);
+      setSelectedPeriod(detailedPeriod);
+      setIsViewModalOpen(true);
+    } catch (error) {
+      console.error("Erro ao buscar detalhes:", error);
+      toast.error("Erro ao carregar detalhes do período");
+    }
+  };
+
+  const openCloseModal = (period: any) => {
+    if (!canEdit) {
+      toast.error("Você não tem permissão para fechar períodos");
       return;
     }
-
-    try {
-      await updatePeriod(selectedPeriod.id, {
-        dataInicio: formData.dataInicio,
-        dataFim: formData.dataFim,
-        observacoes: formData.observacoes,
-      });
-      setIsEditDialogOpen(false);
-      setSelectedPeriod(null);
-      resetForm();
-      loadPeriods();
-    } catch (error) {
-      console.error("Erro ao editar período:", error);
-    }
+    setSelectedPeriod(period);
+    setIsCloseModalOpen(true);
   };
 
-  const handleClosePeriod = async () => {
-    if (!selectedPeriod) return;
-
-    try {
-      await closePeriod(selectedPeriod.id, closeData.observacoes);
-      setIsCloseDialogOpen(false);
-      setSelectedPeriod(null);
-      setCloseData({ observacoes: "" });
-      loadPeriods();
-    } catch (error) {
-      console.error("Erro ao fechar período:", error);
+  const openReopenDialog = (period: any) => {
+    if (!canEdit) {
+      toast.error("Você não tem permissão para reabrir períodos");
+      return;
     }
+    setSelectedPeriod(period);
+    setIsReopenDialogOpen(true);
   };
 
   const handleReopenPeriod = async () => {
     if (!selectedPeriod) return;
 
+    if (!reopenData.motivo.trim()) {
+      toast.error("Informe o motivo da reabertura");
+      return;
+    }
+
     try {
-      await reopenPeriod(selectedPeriod.id, reopenData.motivo);
+      await reabrirPeriodo(selectedPeriod.id, reopenData.motivo);
+      toast.success("Período reaberto com sucesso!");
       setIsReopenDialogOpen(false);
       setSelectedPeriod(null);
       setReopenData({ motivo: "" });
       loadPeriods();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao reabrir período:", error);
+      toast.error(error.response?.data?.message || "Erro ao reabrir período");
     }
-  };
-
-  const openEditDialog = (period: any) => {
-    if (!canEdit) {
-      alert("Você não tem permissão para editar períodos");
-      return;
-    }
-    setSelectedPeriod(period);
-    setFormData({
-      dataInicio: period.dataInicio,
-      dataFim: period.dataFim,
-      observacoes: period.observacoes || "",
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const openCloseDialog = (period: any) => {
-    setSelectedPeriod(period);
-    setIsCloseDialogOpen(true);
-  };
-
-  const openReopenDialog = (period: any) => {
-    setSelectedPeriod(period);
-    setIsReopenDialogOpen(true);
   };
 
   const handleDeleteClick = (id: number) => {
     if (!canDelete) {
-      alert("Você não tem permissão para deletar períodos");
+      toast.error("Você não tem permissão para deletar períodos");
       return;
     }
     setPeriodToDelete(id);
@@ -217,22 +205,24 @@ export default function PeriodsPage() {
   };
 
   const confirmDelete = async () => {
-    if (periodToDelete) {
-      try {
-        await deletePeriod(periodToDelete);
-        setDeleteDialogOpen(false);
-        setPeriodToDelete(null);
-        loadPeriods();
-      } catch (error) {
-        console.error("Erro ao deletar:", error);
-      }
+    if (!periodToDelete) return;
+
+    try {
+      await deletarPeriodo(periodToDelete);
+      toast.success("Período deletado com sucesso!");
+      setDeleteDialogOpen(false);
+      setPeriodToDelete(null);
+      loadPeriods();
+    } catch (error: any) {
+      console.error("Erro ao deletar:", error);
+      toast.error(error.response?.data?.message || "Erro ao deletar período");
     }
   };
 
   // Estatísticas
   const totalPeriods = periods.length;
-  const openPeriods = periods.filter((p) => p.status === "aberto").length;
-  const closedPeriods = periods.filter((p) => p.status === "fechado").length;
+  const openPeriods = periods.filter((p) => !p.fechado).length;
+  const closedPeriods = periods.filter((p) => p.fechado).length;
 
   if (!canView) {
     return (
@@ -365,29 +355,27 @@ export default function PeriodsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge
-                          variant={
-                            period.status === "aberto" ? "default" : "secondary"
-                          }
+                          variant={period.fechado ? "secondary" : "default"}
                           className={
-                            period.status === "aberto"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-700"
+                            period.fechado
+                              ? "bg-gray-100 text-gray-700"
+                              : "bg-green-100 text-green-700"
                           }
                         >
-                          {period.status === "aberto" ? (
-                            <>
-                              <Unlock className="w-3 h-3 mr-1" />
-                              Aberto
-                            </>
-                          ) : (
+                          {period.fechado ? (
                             <>
                               <Lock className="w-3 h-3 mr-1" />
                               Fechado
                             </>
+                          ) : (
+                            <>
+                              <Unlock className="w-3 h-3 mr-1" />
+                              Aberto
+                            </>
                           )}
                         </Badge>
                       </TableCell>
-                      <TableCell>{period.quantidadeNotas || 0}</TableCell>
+                      <TableCell>{period.lancamentos?.length || 0}</TableCell>
                       <TableCell>
                         R$ {(period.valorTotal || 0).toFixed(2)}
                       </TableCell>
@@ -399,23 +387,21 @@ export default function PeriodsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {canEdit && (
+                            <DropdownMenuItem
+                              onClick={() => handleView(period)}
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              Visualizar
+                            </DropdownMenuItem>
+                            {canEdit && !period.fechado && (
                               <DropdownMenuItem
-                                onClick={() => openEditDialog(period)}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Editar
-                              </DropdownMenuItem>
-                            )}
-                            {canEdit && period.status === "aberto" && (
-                              <DropdownMenuItem
-                                onClick={() => openCloseDialog(period)}
+                                onClick={() => openCloseModal(period)}
                               >
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Fechar Período
                               </DropdownMenuItem>
                             )}
-                            {canEdit && period.status === "fechado" && (
+                            {canEdit && period.fechado && (
                               <DropdownMenuItem
                                 onClick={() => openReopenDialog(period)}
                                 className="text-amber-600"
@@ -504,103 +490,6 @@ export default function PeriodsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Dialog Editar */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Editar Período</DialogTitle>
-              <DialogDescription>
-                Altere as informações do período contábil
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-dataInicio">Data de Início</Label>
-                <Input
-                  id="edit-dataInicio"
-                  type="date"
-                  value={formData.dataInicio}
-                  onChange={(e) =>
-                    setFormData({ ...formData, dataInicio: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-dataFim">Data de Fim</Label>
-                <Input
-                  id="edit-dataFim"
-                  type="date"
-                  value={formData.dataFim}
-                  onChange={(e) =>
-                    setFormData({ ...formData, dataFim: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-observacoes">Observações</Label>
-                <Textarea
-                  id="edit-observacoes"
-                  value={formData.observacoes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, observacoes: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setIsEditDialogOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <Button onClick={handleEdit} className="bg-indigo-600">
-                Salvar Alterações
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Dialog Fechar Período */}
-        <Dialog open={isCloseDialogOpen} onOpenChange={setIsCloseDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Fechar Período</DialogTitle>
-              <DialogDescription>
-                Tem certeza que deseja fechar este período? Após fechar, não
-                será possível adicionar novos lançamentos.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="close-observacoes">
-                  Observações (opcional)
-                </Label>
-                <Textarea
-                  id="close-observacoes"
-                  placeholder="Adicione observações sobre o fechamento..."
-                  value={closeData.observacoes}
-                  onChange={(e) =>
-                    setCloseData({ observacoes: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setIsCloseDialogOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <Button onClick={handleClosePeriod} className="bg-indigo-600">
-                <Lock className="w-4 h-4 mr-2" />
-                Fechar Período
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
         {/* Dialog Reabrir Período */}
         <Dialog open={isReopenDialogOpen} onOpenChange={setIsReopenDialogOpen}>
           <DialogContent>
@@ -613,7 +502,7 @@ export default function PeriodsPage() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="reopen-motivo">Motivo da Reabertura</Label>
+                <Label htmlFor="reopen-motivo">Motivo da Reabertura *</Label>
                 <Textarea
                   id="reopen-motivo"
                   placeholder="Informe o motivo da reabertura..."
@@ -645,8 +534,7 @@ export default function PeriodsPage() {
               <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
               <AlertDialogDescription>
                 Tem certeza que deseja excluir este período? Esta ação não pode
-                ser desfeita e todos os lançamentos associados também serão
-                afetados.
+                ser desfeita. Os lançamentos associados não serão deletados.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -660,6 +548,21 @@ export default function PeriodsPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Modal de Fechar Período */}
+        <ClosePeriodModal
+          open={isCloseModalOpen}
+          onOpenChange={setIsCloseModalOpen}
+          period={selectedPeriod}
+          onSuccess={loadPeriods}
+        />
+
+        {/* Modal de Visualizar Período */}
+        <ViewPeriodModal
+          open={isViewModalOpen}
+          onOpenChange={setIsViewModalOpen}
+          period={selectedPeriod}
+        />
       </div>
     </div>
   );

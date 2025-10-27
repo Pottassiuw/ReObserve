@@ -10,7 +10,6 @@ import {
   atualizarLancamento,
   deletarLancamento,
 } from "@/api/endpoints/releases";
-
 export const useReleasesManagement = () => {
   const {
     releases,
@@ -25,7 +24,6 @@ export const useReleasesManagement = () => {
     setLoading,
     setError,
   } = useReleaseStore();
-
   const { userId, userType } = useAuthStore();
   const { canViewRelease, canCreateRelease, canEditRelease, canDeleteRelease } =
     usePermissionsStore();
@@ -34,7 +32,6 @@ export const useReleasesManagement = () => {
     if (userType === "enterprise") {
       return userId; // userId é o empresaId
     }
-
     return userId;
   }, [userId, userType]);
 
@@ -44,10 +41,8 @@ export const useReleasesManagement = () => {
       setError("Você não tem permissão para visualizar lançamentos");
       return;
     }
-
     setLoading(true);
     setError(null);
-
     try {
       const empresaId = getEmpresaId();
 
@@ -56,12 +51,10 @@ export const useReleasesManagement = () => {
         userId,
         empresaId,
       });
-
       const data = await listarLancamentos(empresaId);
       console.log(data);
       const releasesArray = Array.isArray(data) ? data : [];
       console.log("✅ Releases carregados:", releasesArray.length);
-
       setReleases(releasesArray);
     } catch (err: any) {
       const message =
@@ -83,17 +76,14 @@ export const useReleasesManagement = () => {
     setLoading,
     setError,
   ]);
-
   const loadRelease = useCallback(
     async (id: number) => {
       if (!canViewRelease()) {
         setError("Você não tem permissão para visualizar este lançamento");
         return;
       }
-
       setLoading(true);
       setError(null);
-
       try {
         const data = await retornarLancamento(id);
         setCurrentRelease(data);
@@ -109,31 +99,23 @@ export const useReleasesManagement = () => {
     },
     [canViewRelease, setCurrentRelease, setLoading, setError],
   );
-
   const createRelease = useCallback(
     async (data: CriarLancamentoDTO) => {
       if (!canCreateRelease()) {
         setError("Você não tem permissão para criar lançamentos");
         throw new Error("Sem permissão");
       }
-
       const empresaId = getEmpresaId();
-
       const releaseData: CriarLancamentoDTO = {
         ...data,
         usuarioId: userId,
         empresaId: empresaId,
       };
-
-      console.log("📝 Criando release com dados:", releaseData);
-
       setLoading(true);
       setError(null);
-
       try {
         const newRelease = await criarLancamento(releaseData);
         addRelease(newRelease);
-        console.log("✅ Release criado com sucesso:", newRelease);
         return newRelease;
       } catch (err: any) {
         const message =
@@ -149,7 +131,6 @@ export const useReleasesManagement = () => {
     },
     [canCreateRelease, userId, getEmpresaId, addRelease, setLoading, setError],
   );
-
   // Atualizar lançamento
   const updateReleaseById = useCallback(
     async (id: number, data: Partial<Lancamento>) => {
@@ -188,12 +169,10 @@ export const useReleasesManagement = () => {
         setError("Você não tem permissão para deletar lançamentos");
         throw new Error("Sem permissão");
       }
-
       setLoading(true);
       setError(null);
-
       try {
-        await deletarLancamento(id);
+        await deletarLancamento(id, userId);
         removeRelease(id);
       } catch (err: any) {
         const message =

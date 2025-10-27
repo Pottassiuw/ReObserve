@@ -32,11 +32,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, MoreVertical, Edit, Trash2, Eye } from "lucide-react";
 import ReleaseModal from "@/components/releaseModal";
 import { useReleasesManagement } from "@/hooks/useReleasesManagement";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
+
+type ModalMode = "view" | "edit" | "create";
 
 export default function ReleasesPage() {
   const {
@@ -56,7 +58,8 @@ export default function ReleasesPage() {
   } = useReleasesManagement();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRelease, setEditingRelease] = useState(null);
+  const [modalMode, setModalMode] = useState<ModalMode>("create");
+  const [selectedRelease, setSelectedRelease] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [releaseToDelete, setReleaseToDelete] = useState<number | null>(null);
 
@@ -66,14 +69,23 @@ export default function ReleasesPage() {
     }
   }, [canView, loadReleases]);
 
-  const handleNew = () => {
+  const openModal = (mode: ModalMode, release = null) => {
+    setModalMode(mode);
+    setSelectedRelease(release);
+    setCurrentRelease(release);
+    setIsModalOpen(true);
+  };
+
+  const handleCreate = () => {
     if (!canCreate) {
       toast.error("Você não tem permissão para criar lançamentos");
       return;
     }
-    setEditingRelease(null);
-    setCurrentRelease(null);
-    setIsModalOpen(true);
+    openModal("create");
+  };
+
+  const handleView = (release: any) => {
+    openModal("view", release);
   };
 
   const handleEdit = (release: any) => {
@@ -81,17 +93,8 @@ export default function ReleasesPage() {
       toast.error("Você não tem permissão para editar lançamentos");
       return;
     }
-    setEditingRelease(release);
-    setCurrentRelease(release);
-    setIsModalOpen(true);
+    openModal("edit", release);
   };
-
-  const handleView = (release: any) => {
-    setEditingRelease(release);
-    setCurrentRelease(release);
-    setIsModalOpen(true);
-  };
-
   const handleDeleteClick = (id: number) => {
     if (!canDelete) {
       toast.error("Você não tem permissão para deletar lançamentos");
@@ -102,28 +105,26 @@ export default function ReleasesPage() {
   };
 
   const confirmDelete = async () => {
-    if (releaseToDelete) {
-      try {
-        await deleteRelease(releaseToDelete);
-        setDeleteDialogOpen(false);
-        setReleaseToDelete(null);
-        toast.success("Lançamento excluído com sucesso!");
-      } catch (error) {
-        console.error("Erro ao deletar:", error);
-        toast.error("Erro ao excluir lançamento");
-      }
+    if (!releaseToDelete) return;
+    try {
+      await deleteRelease(releaseToDelete);
+      setDeleteDialogOpen(false);
+      setReleaseToDelete(null);
+      toast.success("Lançamento excluído com sucesso!");
+    } catch (error) {
+      console.error("Erro ao deletar:", error);
+      toast.error("Erro ao excluir lançamento");
     }
   };
 
-  const handleModalSave = async (dados: any) => {
+  const handleModalSave = async (data: any) => {
     try {
-      await createRelease(dados);
+      await createRelease(data);
       setIsModalOpen(false);
-      setEditingRelease(null);
+      setSelectedRelease(null);
       loadReleases();
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      // O erro já é tratado no hook e exibido via toast
     }
   };
 
@@ -152,7 +153,7 @@ export default function ReleasesPage() {
           </div>
           {canCreate && (
             <Button
-              onClick={handleNew}
+              onClick={handleCreate}
               className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -189,25 +190,16 @@ export default function ReleasesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Nota Fiscal</TableHead>
+                    <TableHead>Número da Nota</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Localização</TableHead>
+                    <TableHead>Data</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {releases.map((release) => (
                     <TableRow key={release.id}>
-                      <TableCell className="font-medium">
-                        {release.id}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(release.data_lancamento).toLocaleDateString(
-                          "pt-BR",
-                        )}
-                      </TableCell>
                       <TableCell>
                         {release.notaFiscal?.numero ||
                           release.notaFiscalId ||
@@ -221,6 +213,11 @@ export default function ReleasesPage() {
                       <TableCell>
                         {release.latitude?.toFixed(4)},{" "}
                         {release.longitude?.toFixed(4)}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(release.data_lancamento).toLocaleDateString(
+                          "pt-BR",
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -267,17 +264,18 @@ export default function ReleasesPage() {
           </CardContent>
         </Card>
 
-        {/* Modal - CORRIGIDO: Passar empresaId e usuarioId do hook */}
+        {/* Modal de Lançamento */}
         <ReleaseModal
           open={isModalOpen}
           onOpenChange={setIsModalOpen}
-          lancamento={editingRelease}
-          onSalvar={handleModalSave}
+          release={selectedRelease}
+          mode={modalMode}
+          onSave={handleModalSave}
           usuarioId={usuarioId}
           empresaId={empresaId}
         />
 
-        {/* Delete Dialog */}
+        {/* Dialog de Confirmação de Exclusão */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>

@@ -4,9 +4,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { usePermissionsStore } from "@/stores/permissionsStore";
 import {
   listarPeriodos,
-  retornarPeriodo,
   criarPeriodo,
-  atualizarPeriodo,
   deletarPeriodo,
   fecharPeriodo,
   reabrirPeriodo,
@@ -44,8 +42,7 @@ export const usePeriodsManagement = () => {
     setError(null);
 
     try {
-      const empresaId = userType === "enterprise" ? userId : undefined;
-      const data = await listarPeriodos(empresaId || undefined);
+      const data = await listarPeriodos();
       setPeriods(data);
     } catch (err: any) {
       const message =

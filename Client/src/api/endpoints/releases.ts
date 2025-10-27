@@ -59,8 +59,11 @@ export const atualizarLancamento = async (
   return response.data?.data || response.data;
 };
 
-export const deletarLancamento = async (id: number): Promise<void> => {
-  await Client.delete(`/releases/${id}`);
+export const deletarLancamento = async (
+  id: number,
+  enterpriseId: number,
+): Promise<void> => {
+  await Client.delete(`/releases/enterprise/${enterpriseId}/release/${id}`);
 };
 
 export const uploadXML = async (
