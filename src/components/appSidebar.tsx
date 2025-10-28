@@ -34,7 +34,7 @@ export default function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { userType, logout, userId } = useAuthStore();
+  const { userType, logout } = useAuthStore();
   const { canViewRelease, canViewPeriod, isAdmin } = usePermissionsStore();
   const { navigateToLogin } = useAppNavigator();
   const { user } = useUserStore();
@@ -87,7 +87,7 @@ export default function AppSidebar() {
 
   // Mostrar seção de gerenciamento se tiver alguma permissão
   const showManagement = canViewRelease() || canViewPeriod();
-
+  const currentUser = Array.isArray(user) ? user[0] : user;
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b p-4">
@@ -255,7 +255,9 @@ export default function AppSidebar() {
             </span>
             <span className="text-xs text-indigo-600/70 truncate">
               {isAdmin() && "Admin • "}
-              {userType === "enterprise" ? enterprise?.cnpj : user?.nome}
+              {userType === "enterprise"
+                ? enterprise?.cnpj
+                : currentUser?.nome || "Usuário"}
             </span>
             <div>
               <button
