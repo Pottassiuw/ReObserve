@@ -1,149 +1,73 @@
-# 📋 ReObserve: Seu Sistema de Controle de Notas Fiscais
+# React + TypeScript + Vite
 
-> Este projeto tem como finalidade criar e organizar a emissão de NFs (Notas fiscais) para melhor controle às empresas.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## 🚀 Status do Projeto
-**Em desenvolvimento** - Backend implementado | Frontend planejado com React.js e ShadCn para UI.
+Currently, two official plugins are available:
 
----
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## 🛠️ Tecnologias Utilizadas
+## React Compiler
 
-### Backend
-- **Node.js** - Runtime JavaScript
-- **TypeScript** - Tipagem estática 
-- **Express** - Framework web
-- **Prisma** - ORM para banco de dados
-- **PostgreSQL** - Banco de dados
-- **Zod** - Validação de schemas
-- **bcrypt** - Hash de senhas
-- **JWT** - Autenticação
+The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
 
-### Ferramentas de Desenvolvimento
-- **[PREENCHER: outras ferramentas que você usa]**
+## Expanding the ESLint configuration
 
----
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-## ✨ Funcionalidades Implementadas
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-### 🏢 Gestão de Empresas
-- [ ] Cadastro de empresas com validação de CNPJ
-- [ ] [PREENCHER: outras funcionalidades de empresa]
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-### 👥 Gestão de Usuários  
-- [ ] Cadastro de usuários com validação de CPF
-- [ ] [PREENCHER: outras funcionalidades de usuário]
-
-### 🔐 Autenticação
-- [ ] [PREENCHER: funcionalidades de auth que você implementou]
-
-### 📄 Gestão de Notas Fiscais
-- [ ] [PREENCHER: funcionalidades de NF que você planeja/implementou]
-
----
-
-## 🏗️ Estrutura do Projeto
-
-```
-src/
-├── controllers/          # Lógica de controle
-│   └── auth/
-│       └── register/
-├── routes/              # Definição de rotas
-├── prisma/              # Configuração do banco
-│   └── schema.prisma
-├── types/               # Tipos TypeScript
-└── [PREENCHER: outras pastas]
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
----
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-## ⚙️ Como Executar
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-### Pré-requisitos
-```bash
-# [PREENCHER: versões necessárias]
-Node.js >= X.X.X
-PostgreSQL >= X.X
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-
-### Instalação
-```bash
-# 1. Clone o repositório
-git clone https://github.com/Pottassiuw/ReObserve
-
-# 2. Instale as dependências
-npm install
-
-# 3. Configure as variáveis de ambiente
-cp .env.example .env
-# [PREENCHER: quais variáveis são necessárias]
-
-# 4. Execute as migrations
-npx prisma migrate dev
-
-# 5. Inicie o servidor
-npm run start
-```
-
----
-
-## 📡 Endpoints da API
-
-### 🏢 Empresas
-```http
-POST /api/empresas/register
-# [PREENCHER: outros endpoints]
-```
-
-### 👥 Usuários
-```http
-POST /api/usuarios/register
-# [PREENCHER: outros endpoints]
-```
-
-### 🔐 Autenticação
-```http
-# [PREENCHER: endpoints de auth]
-```
-
----
-
-## 🔒 Boas Práticas Implementadas
-
-- ✅ **Validação de dados** com Zod
-- ✅ **Hash de senhas** com bcrypt
-- ✅ **Tipagem forte** com TypeScript
-- ✅ **Validação de documentos** (CPF/CNPJ)
-- ✅ **Tratamento de erros** estruturado
-- ✅ [PREENCHER: outras práticas que você implementou]
-
----
-
-## 🎯 Próximos Passos
-
-- [ ] **Frontend React.js**
-- [ ] **Testes automatizados**
-- [ ] **Deploy em produção**
-- [ ] **[PREENCHER: outros planos]**
-
----
-
-## 🤝 Contribuição
-
-[PREENCHER: instruções se quiser aceitar contribuições]
-
----
-
-## 📄 Licença
-
-[PREENCHER: tipo de licença ou "Projeto pessoal"]
-
----
-
-## 👨‍💻 Desenvolvedor
-
-**[Thiago Nascimento]**
-- GitHub: [@Pottassiuw](https://github.com/Pottassiuw)
-- LinkedIn: [Thiago Nascimento](www.linkedin.com/in/thiago-nascimento-729077292)
-- Email: pottassiu@proton.me
