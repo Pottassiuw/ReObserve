@@ -2,7 +2,6 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { usePeriodStore } from "@/stores/periodStore";
-import { useAuthStore } from "@/stores/authStore";
 import { usePermissionsStore } from "@/stores/permissionsStore";
 import {
   listarPeriodos,
@@ -11,7 +10,6 @@ import {
   deletarPeriodo,
   fecharPeriodo,
   reabrirPeriodo,
-  type Period,
   type CreatePeriodDTO,
   type ClosePeriodDTO,
 } from "@/api/endpoints/periods";
@@ -31,7 +29,6 @@ export const usePeriodsManagement = () => {
     setError,
   } = usePeriodStore();
 
-  const { userId, userType } = useAuthStore();
   const { canViewPeriod, canCreatePeriod, canEditPeriod, canDeletePeriod } =
     usePermissionsStore();
 
@@ -54,7 +51,6 @@ export const usePeriodsManagement = () => {
       checkPermission(canViewPeriod, "visualizar períodos");
       setLoading(true);
       setError(null);
-
       const data = await listarPeriodos();
       setPeriods(data);
       return data;
@@ -154,7 +150,7 @@ export const usePeriodsManagement = () => {
     [canDeletePeriod, checkPermission, removePeriod, setLoading, setError],
   );
 
-  // Fechar período (nova implementação)
+  // Fechar período
   const closePeriod = useCallback(
     async (id: number, data: ClosePeriodDTO) => {
       try {

@@ -44,7 +44,7 @@ export default function SettingsPage() {
     name: "",
     email: "",
   });
-
+  const currentUser = Array.isArray(user) ? user[0] : user;
   useEffect(() => {
     if (userId) {
       console.log("📞 Chamando retornarUsuario com ID:", userId);
@@ -53,21 +53,21 @@ export default function SettingsPage() {
   }, [userId, retornarUsuario]);
 
   useEffect(() => {
-    if (user?.empresaId) {
-      console.log("🏢 Chamando getEnterprise com ID:", user.empresaId);
-      getEnterprise(user.empresaId);
+    if (currentUser?.empresaId) {
+      console.log("🏢 Chamando getEnterprise com ID:", currentUser.empresaId);
+      getEnterprise(currentUser.empresaId);
     }
-  }, [user?.empresaId, getEnterprise]);
+  }, [currentUser?.empresaId, getEnterprise]);
 
   useEffect(() => {
-    if (user) {
+    if (currentUser) {
       console.log("✏️ Atualizando userData com:", {
-        nome: user.nome,
-        email: user.email,
+        nome: currentUser.nome,
+        email: currentUser.email,
       });
       setUserData({
-        name: user.nome || "",
-        email: user.email || "",
+        name: currentUser.nome || "",
+        email: currentUser.email || "",
       });
     }
   }, [user]);
@@ -103,7 +103,7 @@ export default function SettingsPage() {
     );
   }
 
-  if (!user) {
+  if (!currentUser) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-6">
         <div className="max-w-4xl mx-auto">
@@ -184,11 +184,11 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {user.cpf && (
+              {currentUser.cpf && (
                 <div className="space-y-2">
                   <Label className="text-indigo-900">CPF</Label>
                   <Input
-                    value={user.cpf}
+                    value={currentUser.cpf}
                     disabled
                     className="bg-white/50 border-indigo-100 text-indigo-900"
                   />
@@ -301,7 +301,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {user.empresaId && enterprise && (
+        {currentUser.empresaId && enterprise && (
           <Card className="border-0 shadow-md bg-gradient-to-br from-indigo-50/50 to-white">
             <CardHeader>
               <CardTitle className="text-indigo-900 flex items-center gap-2">

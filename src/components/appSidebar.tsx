@@ -255,6 +255,7 @@ export default function AppSidebar() {
             </span>
             <span className="text-xs text-indigo-600/70 truncate">
               {isAdmin() && "Admin • "}
+
               {userType === "enterprise"
                 ? enterprise?.cnpj
                 : currentUser?.nome || "Usuário"}

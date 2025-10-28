@@ -1,10 +1,5 @@
 import { create } from "zustand";
-import {
-  loginApi,
-  logoutApi,
-  type UserPayload,
-  type EnterprisePayload,
-} from "@/api/endpoints/auth";
+import { loginApi, logoutApi } from "@/api/endpoints/auth";
 import { decodeJWT } from "@/utils/decoder";
 import { retornarUsuario } from "@/api/endpoints/users";
 
@@ -65,7 +60,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   checkAuth: async () => {
     set({ isAuthLoading: true });
-
     try {
       const token = localStorage.getItem("auth-token");
 
@@ -81,7 +75,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
 
       const decoded = decodeJWT(token);
-
       const userId = decoded?.sub ? parseInt(decoded.sub, 10) : null;
 
       if (!decoded || !decoded.type || !userId) {
@@ -96,9 +89,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         });
         return;
       }
-
       let isAdmin = false;
-
       if (decoded.type === "user") {
         try {
           const userData = await retornarUsuario(userId);
@@ -116,7 +107,6 @@ export const useAuthStore = create<AuthState>((set) => ({
           return;
         }
       }
-
       set({
         isAuthenticated: true,
         userType: decoded.type,

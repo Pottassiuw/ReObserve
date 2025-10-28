@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { z, ZodError } from "zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,7 +25,6 @@ import { useAuthStore } from "@/stores/authStore";
 import { Permissoes } from "@/stores/permissionsStore";
 import { criarGrupo, deletarGrupo, listarGrupos } from "@/api/endpoints/groups";
 import type { Grupo } from "@/types";
-import { useEnterpriseStore } from "@/stores/enterpriseStore";
 // Schema de validação com Zod
 const grupoSchema = z.object({
   nome: z
@@ -71,7 +70,6 @@ export default function EnterpriseGroups() {
   const [editingGrupo, setEditingGrupo] = useState<Grupo | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [grupoToDelete, setGrupoToDelete] = useState<number | null>(null);
-  const { enterprise } = useEnterpriseStore();
   const [formData, setFormData] = useState({
     nome: "",
     permissoes: [] as string[],

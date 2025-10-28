@@ -44,7 +44,7 @@ export default function CreateUserPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { userType, userId } = useAuthStore();
   const navigate = useNavigate();
-  const { groups, isLoading: loadingGroups, error: groupsError } = useGroups();
+  const { grupos, isLoading: loadingGroups, error: groupsError } = useGroups();
 
   const formSchema = criarUsuarioSchema
     .extend({
@@ -76,7 +76,7 @@ export default function CreateUserPage() {
   const selectedGrupoId = watch("grupoId");
 
   // Encontrar o grupo selecionado
-  const selectedGroup = groups.find((g) => g.id === selectedGrupoId);
+  const selectedGroup = grupos.find((g) => g.id === selectedGrupoId);
 
   // Verificar se o usuário é uma empresa
   useEffect(() => {
@@ -99,7 +99,7 @@ export default function CreateUserPage() {
         email: data.email,
         senha: data.senha,
         cpf: data.cpf,
-        empresaId: userId,
+        empresaId: userId!,
         grupoId: data.grupoId,
       };
 
@@ -311,7 +311,7 @@ export default function CreateUserPage() {
                       Carregando grupos...
                     </span>
                   </div>
-                ) : groups.length === 0 ? (
+                ) : grupos.length === 0 ? (
                   <Alert variant="destructive">
                     <AlertDescription>
                       Nenhum grupo encontrado. Por favor, crie grupos antes de
@@ -331,7 +331,7 @@ export default function CreateUserPage() {
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      {groups.map((grupo) => (
+                      {grupos.map((grupo) => (
                         <SelectItem key={grupo.id} value={grupo.id.toString()}>
                           <div className="flex flex-col">
                             <span className="font-medium">{grupo.nome}</span>
@@ -387,7 +387,7 @@ export default function CreateUserPage() {
                 <Button
                   type="submit"
                   className="flex-1 bg-indigo-600 hover:bg-indigo-700"
-                  disabled={isLoading || loadingGroups || groups.length === 0}
+                  disabled={isLoading || loadingGroups || grupos.length === 0}
                 >
                   {isLoading ? (
                     <>
