@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useMemo, useCallback } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -12,16 +13,15 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import {
-  Search,
-  History,
-  Settings,
-  BarChart3,
-  FileEdit,
   LayoutDashboard,
+  FileEdit,
   Lock,
   UserPlus,
   Users,
   Boxes,
+  Settings,
+  LogOut,
+  ChevronRight,
 } from "lucide-react";
 import Logo from "@/assets/ProjectLogo.png";
 import { useAuthStore } from "@/stores/authStore";
@@ -29,89 +29,151 @@ import { usePermissionsStore } from "@/stores/permissionsStore";
 import { useAppNavigator } from "@/hooks/useAppNavigator";
 import { useUserStore } from "@/stores/userStore";
 import { useEnterpriseStore } from "@/stores/enterpriseStore";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 export default function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const { userType, logout } = useAuthStore();
-  const { canViewRelease, canViewPeriod, isAdmin } = usePermissionsStore();
+  const { canViewRelease, canViewPeriod, isAdmin, permissionsLoaded } =
+    usePermissionsStore();
   const { navigateToLogin } = useAppNavigator();
   const { user } = useUserStore();
   const { enterprise } = useEnterpriseStore();
+  if (!permissionsLoaded) return null;
+  const permissions = useMemo(
+    () => ({
+      canAccessDashboard: userType === "enterprise" || isAdmin(),
+      canManageUsers: userType === "enterprise",
+      showManagement: canViewRelease() || canViewPeriod(),
+    }),
+    [userType, isAdmin, canViewRelease, canViewPeriod],
+  );
 
-  // Define quais páginas o usuário pode acessar
-  const canAccessReports = userType === "enterprise" || isAdmin();
-  const canAccessHistory = userType === "enterprise" || isAdmin();
-  const canAccessSearch = userType === "enterprise" || isAdmin();
-  const canAccessDashboard = userType === "enterprise" || isAdmin();
-  const canManageUsers = userType === "enterprise"; // Apenas empresas
+  const mainMenuItems = useMemo(
+    () => [
+      {
+        id: "dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        path: "/dashboard",
+        show: permissions.canAccessDashboard,
+      },
+      {
+        id: "settings",
+        label: "Configurações",
+        icon: Settings,
+        path: "/user/settings",
+        show: true,
+      },
+    ],
+    [permissions.canAccessDashboard],
+  );
 
-  const mainMenuItems = [
-    {
-      id: "dashboard",
-      label: "Dashboard",
-      icon: LayoutDashboard,
-      path: "/dashboard",
-      show: canAccessDashboard,
-    },
-    {
-      id: "search",
-      label: "Consultar Notas",
-      icon: Search,
-      path: "/search",
-      show: canAccessSearch,
-    },
-    {
-      id: "history",
-      label: "Histórico",
-      icon: History,
-      path: "/history",
-      show: canAccessHistory,
-    },
-    {
-      id: "reports",
-      label: "Relatórios",
-      icon: BarChart3,
-      path: "/reports",
-      show: canAccessReports,
-    },
-    {
-      id: "settings",
-      label: "Configurações",
-      icon: Settings,
-      path: "/user/settings",
-      show: true,
-    },
-  ];
+  const managementItems = useMemo(
+    () => [
+      {
+        id: "releases",
+        label: "Lançamentos",
+        icon: FileEdit,
+        path: "/releases",
+        show: canViewRelease(),
+      },
+      {
+        id: "periods",
+        label: "Períodos",
+        icon: Lock,
+        path: "/periods",
+        show: canViewPeriod(),
+      },
+    ],
+    [canViewRelease, canViewPeriod],
+  );
 
-  // Mostrar seção de gerenciamento se tiver alguma permissão
-  const showManagement = canViewRelease() || canViewPeriod();
-  const currentUser = Array.isArray(user) ? user[0] : user;
+  const userManagementItems = useMemo(
+    () => [
+      {
+        id: "create-user",
+        label: "Criar Usuário",
+        icon: UserPlus,
+        path: "/user/create",
+        show: permissions.canManageUsers,
+      },
+      {
+        id: "manage-users",
+        label: "Gerenciar Usuários",
+        icon: Users,
+        path: "/users/view",
+        show: permissions.canManageUsers,
+      },
+      {
+        id: "groups",
+        label: "Grupos",
+        icon: Boxes,
+        path: "/groups",
+        show: permissions.canManageUsers,
+      },
+    ],
+    [permissions.canManageUsers],
+  );
+
+  const handleNavigation = useCallback(
+    (path: string) => {
+      navigate(path);
+    },
+    [navigate],
+  );
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await logout(userType === "enterprise" ? "enterprise" : "user");
+      navigateToLogin();
+    } catch (error) {
+      console.error("Erro no logout:", error);
+    }
+  }, [logout, userType, navigateToLogin]);
+
+  const currentUser = useMemo(
+    () => (Array.isArray(user) ? user[0] : user),
+    [user],
+  );
+
+  const userDisplayName = useMemo(
+    () =>
+      userType === "enterprise"
+        ? enterprise?.cnpj || "Empresa"
+        : currentUser?.nome || "Usuário",
+    [userType, enterprise, currentUser],
+  );
+
   return (
     <Sidebar collapsible="icon">
+      {/* Header com Logo */}
       <SidebarHeader className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <div
-            onClick={() => navigate("/")}
-            className="flex h-10 w-10 items-center justify-center rounded-lg shadow-sm cursor-pointer"
-          >
-            <img src={Logo} alt="logo" />
+        <div
+          className="flex items-center gap-3 cursor-pointer group"
+          onClick={() => handleNavigation("/")}
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-md group-hover:shadow-lg transition-all">
+            <img src={Logo} alt="logo" className="h-6 w-6" />
           </div>
           <div className="flex flex-col">
-            <span className="font-semibold text-sm text-indigo-600">
-              Lançamentos NF
-            </span>
+            <span className="font-bold text-sm text-indigo-900">ReObserve</span>
             <span className="text-xs text-muted-foreground">
-              Gestão de Notas
+              Sistema de Gestão
             </span>
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="px-2">
+        {/* Menu Principal */}
         <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
+            Principal
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainMenuItems
@@ -119,13 +181,14 @@ export default function AppSidebar() {
                 .map((item) => (
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton
-                      className="hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700"
-                      onClick={() => navigate(item.path)}
+                      className="group relative hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700 data-[active=true]:font-semibold transition-all rounded-lg"
+                      onClick={() => handleNavigation(item.path)}
                       isActive={location.pathname === item.path}
                       tooltip={item.label}
                     >
-                      <item.icon className="h-4 w-4" />
+                      <item.icon className="h-4 w-4 group-data-[active=true]:text-indigo-600" />
                       <span>{item.label}</span>
+                      <ChevronRight className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -133,149 +196,107 @@ export default function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {showManagement && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Gerenciamento</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {canViewRelease() && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className="hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700"
-                      onClick={() => navigate("/releases")}
-                      isActive={location.pathname.includes("/releases")}
-                      tooltip="Lançamentos"
-                    >
-                      <FileEdit className="h-4 w-4 text-indigo-600" />
-                      <span>Lançamentos</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-
-                {canViewPeriod() && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className="hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700"
-                      onClick={() => navigate("/periods")}
-                      isActive={location.pathname.includes("/periods")}
-                      tooltip="Períodos"
-                    >
-                      <Lock className="h-4 w-4 text-indigo-600" />
-                      <span>Períodos</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+        {/* Gerenciamento */}
+        {permissions.showManagement && (
+          <>
+            <Separator className="my-2" />
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
+                Gerenciamento
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {managementItems
+                    .filter((item) => item.show)
+                    .map((item) => (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton
+                          className="group relative hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700 data-[active=true]:font-semibold transition-all rounded-lg"
+                          onClick={() => handleNavigation(item.path)}
+                          isActive={location.pathname.includes(item.path)}
+                          tooltip={item.label}
+                        >
+                          <item.icon className="h-4 w-4 text-indigo-600" />
+                          <span>{item.label}</span>
+                          <ChevronRight className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
         )}
 
-        {/* Seção de Usuários - Apenas para Empresas */}
-        {canManageUsers && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Usuários</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    className="hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700"
-                    onClick={() => navigate("/user/create")}
-                    isActive={location.pathname === "/user/create"}
-                    tooltip="Criar Usuário"
-                  >
-                    <UserPlus className="h-4 w-4 text-indigo-600" />
-                    <span>Criar Usuário</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    className="hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700"
-                    onClick={() => navigate("/users/view")}
-                    isActive={location.pathname === "/users/view"}
-                    tooltip="Gerenciar Usuários"
-                  >
-                    <Users className="h-4 w-4 text-indigo-600" />
-                    <span>Gerenciar Usuários</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    className="hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700"
-                    onClick={() => navigate("/groups")}
-                    isActive={location.pathname === "groups"}
-                    tooltip="Criar Usuário"
-                  >
-                    <Boxes className="h-4 w-4 text-indigo-600" />
-                    <span>Criar Grupos</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {canAccessDashboard && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Estatísticas Rápidas</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <div className="px-3 py-2 space-y-3">
-                <div className="flex justify-between items-center text-sm p-2 rounded-md bg-indigo-50/50">
-                  <span className="text-muted-foreground">Hoje</span>
-                  <span className="font-semibold text-indigo-700">
-                    12 notas
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm p-2 rounded-md bg-indigo-50/50">
-                  <span className="text-muted-foreground">Este mês</span>
-                  <span className="font-semibold text-indigo-700">
-                    284 notas
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm p-2 rounded-md bg-gradient-to-r from-indigo-50 to-indigo-100/50">
-                  <span className="text-muted-foreground">Total</span>
-                  <span className="font-semibold text-indigo-700">
-                    R$ 1.234.567,89
-                  </span>
-                </div>
-              </div>
-            </SidebarGroupContent>
-          </SidebarGroup>
+        {/* Usuários  */}
+        {permissions.canManageUsers && (
+          <>
+            <Separator className="my-2" />
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
+                Usuários
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {userManagementItems
+                    .filter((item) => item.show)
+                    .map((item) => (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton
+                          className="group relative hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700 data-[active=true]:font-semibold transition-all rounded-lg"
+                          onClick={() => handleNavigation(item.path)}
+                          isActive={location.pathname === item.path}
+                          tooltip={item.label}
+                        >
+                          <item.icon className="h-4 w-4 text-indigo-600" />
+                          <span>{item.label}</span>
+                          <ChevronRight className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
         )}
       </SidebarContent>
 
+      {/* Footer com Perfil */}
       <SidebarFooter className="border-t p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-white text-sm font-semibold shadow-md">
-            {userType === "enterprise" ? "E" : "U"}
-          </div>
-          <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-sm font-medium truncate text-indigo-900">
-              {userType === "enterprise" ? "Minha Empresa" : "Meu Perfil"}
-            </span>
-            <span className="text-xs text-indigo-600/70 truncate">
-              {isAdmin() && "Admin • "}
-
-              {userType === "enterprise"
-                ? enterprise?.cnpj
-                : currentUser?.nome || "Usuário"}
-            </span>
-            <div>
-              <button
-                className="p-1 bg-red-400/20 rounded-sm text-red-400 text-xs w-fit hover:bg-red-500/80 hover:text-white"
-                onClick={async () => {
-                  try {
-                    await logout(userType ? "user" : "enterprise");
-                    navigateToLogin();
-                  } catch (error: any) {
-                    console.error(error);
-                  }
-                }}
-              >
-                Logout
-              </button>
+        <div className="space-y-3">
+          {/* Card do Usuário */}
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-br from-indigo-50 to-indigo-100/50 border border-indigo-100">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-white text-sm font-bold shadow-md flex-shrink-0">
+              {userType === "enterprise" ? "E" : "U"}
+            </div>
+            <div className="flex flex-col flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold truncate text-indigo-900">
+                  {userType === "enterprise" ? "Empresa" : "Perfil"}
+                </span>
+                {isAdmin() && (
+                  <Badge
+                    variant="secondary"
+                    className="text-[10px] px-1.5 py-0 bg-indigo-200 text-indigo-900"
+                  >
+                    Admin
+                  </Badge>
+                )}
+              </div>
+              <span className="text-xs text-indigo-700/70 truncate font-medium">
+                {userDisplayName}
+              </span>
             </div>
           </div>
+
+          {/* Botão de Logout */}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-all group"
+          >
+            <LogOut className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
+            <span>Sair da conta</span>
+          </button>
         </div>
       </SidebarFooter>
     </Sidebar>

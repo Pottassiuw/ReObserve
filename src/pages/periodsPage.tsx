@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,12 +16,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,22 +33,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus,
-  MoreVertical,
   Lock,
   Unlock,
   Trash2,
@@ -55,227 +47,279 @@ import {
   Calendar,
   CheckCircle,
   XCircle,
+  Loader2,
+  RefreshCw,
+  Search,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
-import ClosePeriodModal from "@/components/closePeriodModal";
-import ViewPeriodModal from "@/components/viewPeriodModal";
 import {
   listarPeriodos,
   buscarPeriodo,
   criarPeriodo,
+  fecharPeriodo,
   reabrirPeriodo,
   deletarPeriodo,
+  buscarLancamentosDisponiveis,
+  type Period,
 } from "@/api/endpoints/periods";
-import { usePeriodsManagement } from "@/hooks/usePeriodsManagement";
 
 export default function PeriodsPage() {
-  const { canCreate, canEdit, canDelete, canView } = usePeriodsManagement();
-
-  const [periods, setPeriods] = useState<any[]>([]);
+  const [periods, setPeriods] = useState<Period[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isCloseOpen, setIsCloseOpen] = useState(false);
+  const [isReopenOpen, setIsReopenOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  const [selectedPeriod, setSelectedPeriod] = useState<any>(null);
-  const [periodToDelete, setPeriodToDelete] = useState<number | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<Period | null>(null);
+  const [availableReleases, setAvailableReleases] = useState<any[]>([]);
+  const [selectedReleases, setSelectedReleases] = useState<number[]>([]);
 
-  const [formData, setFormData] = useState({
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [releaseSearchTerm, setReleaseSearchTerm] = useState("");
+
+  const [createForm, setCreateForm] = useState({
     dataInicio: "",
     dataFim: "",
     observacoes: "",
   });
 
-  const [reopenData, setReopenData] = useState({
+  const [closeForm, setCloseForm] = useState({
+    observacoes: "",
+  });
+
+  const [reopenForm, setReopenForm] = useState({
     motivo: "",
   });
 
   useEffect(() => {
-    if (canView) {
-      loadPeriods();
-    }
-  }, [canView]);
+    loadPeriods();
+  }, []);
 
   const loadPeriods = async () => {
     setIsLoading(true);
-    setError(null);
     try {
       const data = await listarPeriodos();
       setPeriods(data);
-    } catch (err: any) {
-      console.error("Erro ao carregar períodos:", err);
-      setError(err.message || "Erro ao carregar períodos");
+    } catch (error: any) {
+      toast.error(error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      dataInicio: "",
-      dataFim: "",
-      observacoes: "",
-    });
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await loadPeriods();
+      toast.success("Períodos atualizados!");
+    } catch (error) {
+      toast.error("Erro ao atualizar");
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
-  const handleCreate = async () => {
-    if (!canCreate) {
-      toast.error("Você não tem permissão para criar períodos");
-      return;
-    }
+  const filteredPeriods = useMemo(() => {
+    if (!searchTerm.trim()) return periods;
 
-    if (!formData.dataInicio || !formData.dataFim) {
-      toast.error("Preencha as datas de início e fim");
+    const term = searchTerm.toLowerCase();
+    return periods.filter((period) => {
+      const id = period.id.toString();
+      const inicio = new Date(period.dataInicio).toLocaleDateString("pt-BR");
+      const fim = new Date(period.dataFim).toLocaleDateString("pt-BR");
+      const status = period.fechado ? "fechado" : "aberto";
+      const obs = period.observacoes?.toLowerCase() || "";
+
+      return (
+        id.includes(term) ||
+        inicio.includes(term) ||
+        fim.includes(term) ||
+        status.includes(term) ||
+        obs.includes(term)
+      );
+    });
+  }, [periods, searchTerm]);
+
+  const filteredAvailableReleases = useMemo(() => {
+    if (!releaseSearchTerm.trim()) return availableReleases;
+
+    const term = releaseSearchTerm.toLowerCase();
+    return availableReleases.filter((release) => {
+      const numero = release.notaFiscal?.numero?.toString() || "";
+      const valor = release.notaFiscal?.valor?.toString() || "";
+
+      return numero.toLowerCase().includes(term) || valor.includes(term);
+    });
+  }, [availableReleases, releaseSearchTerm]);
+
+  const handleCreate = useCallback(async () => {
+    if (!createForm.dataInicio || !createForm.dataFim) {
+      toast.error("Preencha as datas");
       return;
     }
 
     try {
-      await criarPeriodo(formData);
-      toast.success("Período criado com sucesso!");
-      setIsCreateDialogOpen(false);
-      resetForm();
+      await criarPeriodo(createForm);
+      toast.success("Período criado!");
+      setIsCreateOpen(false);
+      setCreateForm({ dataInicio: "", dataFim: "", observacoes: "" });
       loadPeriods();
     } catch (error: any) {
-      console.error("Erro ao criar período:", error);
-      toast.error(error.response?.data?.message || "Erro ao criar período");
+      toast.error(error.message);
     }
-  };
+  }, [createForm]);
 
-  const handleView = async (period: any) => {
+  const handleView = useCallback(async (period: Period) => {
     try {
-      const detailedPeriod = await buscarPeriodo(period.id);
-      setSelectedPeriod(detailedPeriod);
-      setIsViewModalOpen(true);
-    } catch (error) {
-      console.error("Erro ao buscar detalhes:", error);
-      toast.error("Erro ao carregar detalhes do período");
+      const detailed = await buscarPeriodo(period.id);
+      setSelectedPeriod(detailed);
+      setIsViewOpen(true);
+    } catch (error: any) {
+      toast.error(error.message);
     }
-  };
+  }, []);
 
-  const openCloseModal = (period: any) => {
-    if (!canEdit) {
-      toast.error("Você não tem permissão para fechar períodos");
-      return;
+  const handleOpenClose = useCallback(async (period: Period) => {
+    try {
+      setSelectedPeriod(period);
+      const releases = await buscarLancamentosDisponiveis();
+      setAvailableReleases(releases);
+      setSelectedReleases([]);
+      setReleaseSearchTerm("");
+      setIsCloseOpen(true);
+    } catch (error: any) {
+      toast.error(error.message);
     }
-    setSelectedPeriod(period);
-    setIsCloseModalOpen(true);
-  };
+  }, []);
 
-  const openReopenDialog = (period: any) => {
-    if (!canEdit) {
-      toast.error("Você não tem permissão para reabrir períodos");
-      return;
-    }
-    setSelectedPeriod(period);
-    setIsReopenDialogOpen(true);
-  };
-
-  const handleReopenPeriod = async () => {
+  const handleClose = async () => {
     if (!selectedPeriod) return;
 
-    if (!reopenData.motivo.trim()) {
-      toast.error("Informe o motivo da reabertura");
+    try {
+      await fecharPeriodo(selectedPeriod.id, {
+        lancamentosIds: selectedReleases,
+        observacoes: closeForm.observacoes,
+      });
+      toast.success("Período fechado!");
+      setIsCloseOpen(false);
+      setCloseForm({ observacoes: "" });
+      setSelectedReleases([]);
+      loadPeriods();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleReopen = async () => {
+    if (!selectedPeriod) return;
+
+    if (!reopenForm.motivo.trim()) {
+      toast.error("Informe o motivo");
       return;
     }
 
     try {
-      await reabrirPeriodo(selectedPeriod.id, reopenData.motivo);
-      toast.success("Período reaberto com sucesso!");
-      setIsReopenDialogOpen(false);
-      setSelectedPeriod(null);
-      setReopenData({ motivo: "" });
+      await reabrirPeriodo(selectedPeriod.id, reopenForm.motivo);
+      toast.success("Período reaberto!");
+      setIsReopenOpen(false);
+      setReopenForm({ motivo: "" });
       loadPeriods();
     } catch (error: any) {
-      console.error("Erro ao reabrir período:", error);
-      toast.error(error.response?.data?.message || "Erro ao reabrir período");
+      toast.error(error.message);
     }
   };
 
-  const handleDeleteClick = (id: number) => {
-    if (!canDelete) {
-      toast.error("Você não tem permissão para deletar períodos");
-      return;
-    }
-    setPeriodToDelete(id);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!periodToDelete) return;
+  const handleDelete = async () => {
+    if (!selectedPeriod) return;
 
     try {
-      await deletarPeriodo(periodToDelete);
-      toast.success("Período deletado com sucesso!");
-      setDeleteDialogOpen(false);
-      setPeriodToDelete(null);
+      await deletarPeriodo(selectedPeriod.id);
+      toast.success("Período deletado!");
+      setIsDeleteOpen(false);
       loadPeriods();
     } catch (error: any) {
-      console.error("Erro ao deletar:", error);
-      toast.error(error.response?.data?.message || "Erro ao deletar período");
+      toast.error(error.message);
     }
   };
 
-  // Estatísticas
-  const totalPeriods = periods.length;
-  const openPeriods = periods.filter((p) => !p.fechado).length;
-  const closedPeriods = periods.filter((p) => p.fechado).length;
+  const toggleRelease = useCallback((id: number) => {
+    setSelectedReleases((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }, []);
 
-  if (!canView) {
+  const toggleAllReleases = useCallback(() => {
+    if (selectedReleases.length === filteredAvailableReleases.length) {
+      setSelectedReleases([]);
+    } else {
+      setSelectedReleases(filteredAvailableReleases.map((r) => r.id));
+    }
+  }, [selectedReleases.length, filteredAvailableReleases]);
+
+  const stats = useMemo(
+    () => ({
+      total: periods.length,
+      abertos: periods.filter((p) => !p.fechado).length,
+      fechados: periods.filter((p) => p.fechado).length,
+    }),
+    [periods],
+  );
+
+  if (isLoading && periods.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <Alert variant="destructive">
-          <AlertDescription>
-            Você não tem permissão para visualizar períodos.
-          </AlertDescription>
-        </Alert>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Períodos</h1>
-            <p className="text-gray-600 mt-2">Gerencie os períodos contábeis</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              Períodos
+            </h1>
+            <p className="text-sm md:text-base text-gray-600 mt-1">
+              Gerencie os períodos contábeis
+            </p>
           </div>
-          {canCreate && (
+          <div className="flex gap-2">
             <Button
-              onClick={() => {
-                resetForm();
-                setIsCreateDialogOpen(true);
-              }}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              onClick={handleRefresh}
+              variant="outline"
+              disabled={isRefreshing}
+              className="flex-1 sm:flex-initial"
+            >
+              <RefreshCw
+                className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              <span className="hidden sm:inline">Atualizar</span>
+            </Button>
+            <Button
+              onClick={() => setIsCreateOpen(true)}
+              className="bg-indigo-600 flex-1 sm:flex-initial"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Novo Período
+              Novo
             </Button>
-          )}
+          </div>
         </div>
 
-        {/* Error Alert */}
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Cards de Resumo */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Cards de Estatísticas -  */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {totalPeriods}
-                  </p>
+                  <p className="text-sm text-gray-600">Total</p>
+                  <p className="text-2xl font-bold">{stats.total}</p>
                 </div>
                 <Calendar className="w-8 h-8 text-indigo-600" />
               </div>
@@ -283,12 +327,12 @@ export default function PeriodsPage() {
           </Card>
 
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Abertos</p>
+                  <p className="text-sm text-gray-600">Abertos</p>
                   <p className="text-2xl font-bold text-green-600">
-                    {openPeriods}
+                    {stats.abertos}
                   </p>
                 </div>
                 <Unlock className="w-8 h-8 text-green-600" />
@@ -297,12 +341,12 @@ export default function PeriodsPage() {
           </Card>
 
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Fechados</p>
+                  <p className="text-sm text-gray-600">Fechados</p>
                   <p className="text-2xl font-bold text-gray-600">
-                    {closedPeriods}
+                    {stats.fechados}
                   </p>
                 </div>
                 <Lock className="w-8 h-8 text-gray-600" />
@@ -311,258 +355,572 @@ export default function PeriodsPage() {
           </Card>
         </div>
 
-        {/* Tabela de Períodos */}
+        {/* Card Principal */}
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Períodos</CardTitle>
-            <CardDescription>
-              Todos os períodos contábeis cadastrados
-            </CardDescription>
+            <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+              <div>
+                <CardTitle>Períodos Cadastrados</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  {filteredPeriods.length} de {periods.length} períodos
+                </CardDescription>
+              </div>
+
+              {/* Busca */}
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar períodos..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 pr-9"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
           </CardHeader>
+
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">Carregando...</p>
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
               </div>
-            ) : periods.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">Nenhum período encontrado</p>
-              </div>
+            ) : filteredPeriods.length === 0 ? (
+              <p className="text-center text-gray-500 py-12">
+                {searchTerm
+                  ? "Nenhum período encontrado"
+                  : "Nenhum período cadastrado"}
+              </p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Data Início</TableHead>
-                    <TableHead>Data Fim</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Notas</TableHead>
-                    <TableHead>Valor Total</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {periods.map((period) => (
-                    <TableRow key={period.id}>
-                      <TableCell className="font-medium">{period.id}</TableCell>
-                      <TableCell>
-                        {new Date(period.dataInicio).toLocaleDateString(
-                          "pt-BR",
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(period.dataFim).toLocaleDateString("pt-BR")}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={period.fechado ? "secondary" : "default"}
-                          className={
-                            period.fechado
-                              ? "bg-gray-100 text-gray-700"
-                              : "bg-green-100 text-green-700"
-                          }
-                        >
-                          {period.fechado ? (
-                            <>
-                              <Lock className="w-3 h-3 mr-1" />
-                              Fechado
-                            </>
-                          ) : (
-                            <>
-                              <Unlock className="w-3 h-3 mr-1" />
-                              Aberto
-                            </>
-                          )}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{period.lancamentos?.length || 0}</TableCell>
-                      <TableCell>
-                        R$ {(period.valorTotal || 0).toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
+              <>
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Início</TableHead>
+                        <TableHead>Fim</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Lançamentos</TableHead>
+                        <TableHead>Valor Total</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredPeriods.map((period) => (
+                        <TableRow key={period.id}>
+                          <TableCell className="font-medium">
+                            {period.id}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(period.dataInicio).toLocaleDateString(
+                              "pt-BR",
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(period.dataFim).toLocaleDateString(
+                              "pt-BR",
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={
+                                period.fechado
+                                  ? "bg-gray-100 text-gray-700"
+                                  : "bg-green-100 text-green-700"
+                              }
+                            >
+                              {period.fechado ? (
+                                <>
+                                  <Lock className="w-3 h-3 mr-1" />
+                                  Fechado
+                                </>
+                              ) : (
+                                <>
+                                  <Unlock className="w-3 h-3 mr-1" />
+                                  Aberto
+                                </>
+                              )}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {period.lancamentos?.length || 0}
+                          </TableCell>
+                          <TableCell>
+                            R$ {(period.valorTotal || 0).toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleView(period)}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+
+                              {!period.fechado && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleOpenClose(period)}
+                                  className="text-green-600"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </Button>
+                              )}
+
+                              {period.fechado && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedPeriod(period);
+                                    setIsReopenOpen(true);
+                                  }}
+                                  className="text-amber-600"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </Button>
+                              )}
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPeriod(period);
+                                  setIsDeleteOpen(true);
+                                }}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <div className="md:hidden space-y-3">
+                  {filteredPeriods.map((period) => (
+                    <Card key={period.id}>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <p className="text-sm text-gray-600">
+                              Período #{period.id}
+                            </p>
+                            <Badge
+                              className={`mt-1 ${
+                                period.fechado
+                                  ? "bg-gray-100 text-gray-700"
+                                  : "bg-green-100 text-green-700"
+                              }`}
+                            >
+                              {period.fechado ? "Fechado" : "Aberto"}
+                            </Badge>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleView(period)}
                             >
-                              <Eye className="mr-2 h-4 w-4" />
-                              Visualizar
-                            </DropdownMenuItem>
-                            {canEdit && !period.fechado && (
-                              <DropdownMenuItem
-                                onClick={() => openCloseModal(period)}
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            {!period.fechado && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenClose(period)}
                               >
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Fechar Período
-                              </DropdownMenuItem>
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                              </Button>
                             )}
-                            {canEdit && period.fechado && (
-                              <DropdownMenuItem
-                                onClick={() => openReopenDialog(period)}
-                                className="text-amber-600"
+                            {period.fechado && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPeriod(period);
+                                  setIsReopenOpen(true);
+                                }}
                               >
-                                <XCircle className="mr-2 h-4 w-4" />
-                                Reabrir Período
-                              </DropdownMenuItem>
+                                <XCircle className="w-4 h-4 text-amber-600" />
+                              </Button>
                             )}
-                            {canDelete && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteClick(period.id)}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Excluir
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedPeriod(period);
+                                setIsDeleteOpen(true);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-gray-600">Início</p>
+                            <p className="font-medium">
+                              {new Date(period.dataInicio).toLocaleDateString(
+                                "pt-BR",
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Fim</p>
+                            <p className="font-medium">
+                              {new Date(period.dataFim).toLocaleDateString(
+                                "pt-BR",
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Lançamentos</p>
+                            <p className="font-semibold">
+                              {period.lancamentos?.length || 0}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Valor Total</p>
+                            <p className="font-semibold text-green-600">
+                              R$ {(period.valorTotal || 0).toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
 
         {/* Dialog Criar */}
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogContent className="max-w-md mx-4">
             <DialogHeader>
-              <DialogTitle>Criar Novo Período</DialogTitle>
+              <DialogTitle>Criar Período</DialogTitle>
               <DialogDescription>
-                Preencha as informações do novo período contábil
+                Preencha os dados do período
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="dataInicio">Data de Início</Label>
+                <Label>Data Início</Label>
                 <Input
-                  id="dataInicio"
                   type="date"
-                  value={formData.dataInicio}
+                  value={createForm.dataInicio}
                   onChange={(e) =>
-                    setFormData({ ...formData, dataInicio: e.target.value })
+                    setCreateForm({ ...createForm, dataInicio: e.target.value })
                   }
                 />
               </div>
               <div>
-                <Label htmlFor="dataFim">Data de Fim</Label>
+                <Label>Data Fim</Label>
                 <Input
-                  id="dataFim"
                   type="date"
-                  value={formData.dataFim}
+                  value={createForm.dataFim}
                   onChange={(e) =>
-                    setFormData({ ...formData, dataFim: e.target.value })
+                    setCreateForm({ ...createForm, dataFim: e.target.value })
                   }
                 />
               </div>
               <div>
-                <Label htmlFor="observacoes">Observações</Label>
+                <Label>Observações</Label>
                 <Textarea
-                  id="observacoes"
-                  value={formData.observacoes}
+                  value={createForm.observacoes}
                   onChange={(e) =>
-                    setFormData({ ...formData, observacoes: e.target.value })
+                    setCreateForm({
+                      ...createForm,
+                      observacoes: e.target.value,
+                    })
                   }
                 />
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
-                onClick={() => setIsCreateDialogOpen(false)}
+                onClick={() => setIsCreateOpen(false)}
+                className="w-full sm:w-auto"
               >
                 Cancelar
               </Button>
-              <Button onClick={handleCreate} className="bg-indigo-600">
-                Criar Período
+              <Button
+                onClick={handleCreate}
+                className="bg-indigo-600 w-full sm:w-auto"
+              >
+                Criar
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Dialog Reabrir Período */}
-        <Dialog open={isReopenDialogOpen} onOpenChange={setIsReopenDialogOpen}>
-          <DialogContent>
+        {/* Dialog Visualizar */}
+        <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto mx-4">
+            <DialogHeader>
+              <DialogTitle>Detalhes do Período</DialogTitle>
+            </DialogHeader>
+            {selectedPeriod && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm text-gray-600">Início</Label>
+                    <p className="font-medium">
+                      {new Date(selectedPeriod.dataInicio).toLocaleDateString(
+                        "pt-BR",
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-gray-600">Fim</Label>
+                    <p className="font-medium">
+                      {new Date(selectedPeriod.dataFim).toLocaleDateString(
+                        "pt-BR",
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-gray-600">Status</Label>
+                    <p>
+                      <Badge
+                        className={
+                          selectedPeriod.fechado
+                            ? "bg-gray-100 text-gray-700"
+                            : "bg-green-100 text-green-700"
+                        }
+                      >
+                        {selectedPeriod.fechado ? "Fechado" : "Aberto"}
+                      </Badge>
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-gray-600">Valor Total</Label>
+                    <p className="font-medium">
+                      R$ {(selectedPeriod.valorTotal || 0).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                {selectedPeriod.observacoes && (
+                  <div>
+                    <Label className="text-sm text-gray-600">Observações</Label>
+                    <p className="text-sm mt-1">{selectedPeriod.observacoes}</p>
+                  </div>
+                )}
+
+                <div>
+                  <Label className="text-sm text-gray-600 mb-2 block">
+                    Lançamentos ({selectedPeriod.lancamentos?.length || 0})
+                  </Label>
+                  {selectedPeriod.lancamentos &&
+                  selectedPeriod.lancamentos.length > 0 ? (
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>NF-e</TableHead>
+                              <TableHead>Data</TableHead>
+                              <TableHead>Valor</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {selectedPeriod.lancamentos.map((lanc: any) => (
+                              <TableRow key={lanc.id}>
+                                <TableCell>{lanc.notaFiscal?.numero}</TableCell>
+                                <TableCell>
+                                  {new Date(
+                                    lanc.data_lancamento,
+                                  ).toLocaleDateString("pt-BR")}
+                                </TableCell>
+                                <TableCell>
+                                  R$ {(lanc.notaFiscal?.valor || 0).toFixed(2)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">Nenhum lançamento</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Fechar*/}
+        <Dialog open={isCloseOpen} onOpenChange={setIsCloseOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto mx-4">
+            <DialogHeader>
+              <DialogTitle>Fechar Período</DialogTitle>
+              <DialogDescription>
+                Selecione os lançamentos para incluir ({selectedReleases.length}{" "}
+                selecionados)
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <Label>Lançamentos Disponíveis</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleAllReleases}
+                  >
+                    {selectedReleases.length ===
+                    filteredAvailableReleases.length
+                      ? "Desmarcar Todos"
+                      : "Selecionar Todos"}
+                  </Button>
+                </div>
+
+                {/* Busca dentro do modal */}
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Buscar lançamentos..."
+                    value={releaseSearchTerm}
+                    onChange={(e) => setReleaseSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+
+                <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
+                  {filteredAvailableReleases.length === 0 ? (
+                    <p className="text-sm text-gray-500">
+                      {releaseSearchTerm
+                        ? "Nenhum lançamento encontrado"
+                        : "Nenhum lançamento disponível"}
+                    </p>
+                  ) : (
+                    filteredAvailableReleases.map((release) => (
+                      <div
+                        key={release.id}
+                        className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                        onClick={() => toggleRelease(release.id)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedReleases.includes(release.id)}
+                          onChange={() => toggleRelease(release.id)}
+                          className="w-4 h-4"
+                        />
+                        <span className="flex-1 text-sm">
+                          NF-e: {release.notaFiscal?.numero} - R${" "}
+                          {(release.notaFiscal?.valor || 0).toFixed(2)}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div>
+                <Label>Observações</Label>
+                <Textarea
+                  value={closeForm.observacoes}
+                  onChange={(e) =>
+                    setCloseForm({ observacoes: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsCloseOpen(false)}
+                className="w-full sm:w-auto"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleClose}
+                className="bg-indigo-600 w-full sm:w-auto"
+              >
+                Fechar Período
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Reabrir */}
+        <Dialog open={isReopenOpen} onOpenChange={setIsReopenOpen}>
+          <DialogContent className="max-w-md mx-4">
             <DialogHeader>
               <DialogTitle>Reabrir Período</DialogTitle>
               <DialogDescription>
-                Tem certeza que deseja reabrir este período? Isso permitirá
-                novos lançamentos.
+                Informe o motivo da reabertura
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="reopen-motivo">Motivo da Reabertura *</Label>
-                <Textarea
-                  id="reopen-motivo"
-                  placeholder="Informe o motivo da reabertura..."
-                  value={reopenData.motivo}
-                  onChange={(e) => setReopenData({ motivo: e.target.value })}
-                  required
-                />
-              </div>
+            <div>
+              <Label>Motivo *</Label>
+              <Textarea
+                value={reopenForm.motivo}
+                onChange={(e) => setReopenForm({ motivo: e.target.value })}
+                placeholder="Descreva o motivo..."
+              />
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
-                onClick={() => setIsReopenDialogOpen(false)}
+                onClick={() => setIsReopenOpen(false)}
+                className="w-full sm:w-auto"
               >
                 Cancelar
               </Button>
-              <Button onClick={handleReopenPeriod} className="bg-amber-600">
-                <Unlock className="w-4 h-4 mr-2" />
-                Reabrir Período
+              <Button
+                onClick={handleReopen}
+                className="bg-amber-600 w-full sm:w-auto"
+              >
+                Reabrir
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Delete Dialog */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
+        {/* Dialog Deletar */}
+        <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+          <AlertDialogContent className="max-w-md mx-4">
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja excluir este período? Esta ação não pode
-                ser desfeita. Os lançamentos associados não serão deletados.
+                Tem certeza? Os lançamentos não serão deletados.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogCancel className="w-full sm:w-auto">
+                Cancelar
+              </AlertDialogCancel>
               <AlertDialogAction
-                onClick={confirmDelete}
-                className="bg-red-600 hover:bg-red-700"
+                onClick={handleDelete}
+                className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
               >
                 Excluir
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        {/* Modal de Fechar Período */}
-        <ClosePeriodModal
-          open={isCloseModalOpen}
-          onOpenChange={setIsCloseModalOpen}
-          period={selectedPeriod}
-          onSuccess={loadPeriods}
-        />
-
-        {/* Modal de Visualizar Período */}
-        <ViewPeriodModal
-          open={isViewModalOpen}
-          onOpenChange={setIsViewModalOpen}
-          period={selectedPeriod}
-        />
       </div>
     </div>
   );

@@ -10,7 +10,6 @@ export const retornarUsuario = async (id: number): Promise<User> => {
     if (!response.data || !response.data.usuario) {
       throw new Error("Usuário não encontrado");
     }
-    console.log("Usuário retornado:", response.data.usuario);
     return response.data.usuario;
   } catch (error: any) {
     throw new Error(`Erro ao buscar usuário: ${error.message}`);
@@ -22,13 +21,8 @@ export const retornarUsuarios = async (empresaId: number): Promise<User[]> => {
     if (!response || !response.data) {
       throw new Error("Empresa não existe");
     }
-    console.log("📦 Resposta da API:", response.data);
     const usuarios = response.data.users || response.data;
 
-    console.log(
-      "📋 Usuarios extraídos:",
-      Array.isArray(usuarios) ? usuarios : [],
-    );
     return Array.isArray(usuarios) ? usuarios : [];
   } catch (error) {
     throw new Error(`Failed to fetch users: ${error}`);

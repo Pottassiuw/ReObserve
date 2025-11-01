@@ -1,29 +1,114 @@
 import { createBrowserRouter } from "react-router-dom";
-import Home from "@/pages/home";
+import { lazy, Suspense } from "react";
 import App from "@/App";
-import UserLogin from "@/pages/user/user.login";
-import EnterpriseLogin from "@/pages/enterprise/enterprise.login";
-import EnterpriseRegister from "@/pages/enterprise/enterprise.register";
-import ReleasesPage from "@/pages/releasesPage";
 import DashboardLayout from "@/layout/dashboardLayout";
-import Dashboard from "@/pages/dashboard";
-import UserSettingsPage from "@/pages/user/user.config";
-import PeriodsPage from "@/pages/periodsPage";
-import PageNotFound from "@/pages/notFound";
 import ProtectedRoute from "./protectedRoutes";
-import CreateUserPage from "@/pages/user/user.register";
-import UserView from "@/pages/user/user.view";
-import EnterpriseGroups from "@/pages/enterprise/enterprise.groups";
+import { Loader2 } from "lucide-react";
+
+const Home = lazy(() => import("@/pages/home"));
+const UserLogin = lazy(() => import("@/pages/user/user.login"));
+const EnterpriseLogin = lazy(
+  () => import("@/pages/enterprise/enterprise.login"),
+);
+const EnterpriseRegister = lazy(
+  () => import("@/pages/enterprise/enterprise.register"),
+);
+const Dashboard = lazy(() => import("@/pages/dashboard"));
+const ReleasesPage = lazy(() => import("@/pages/releasesPage"));
+const PeriodsPage = lazy(() => import("@/pages/periodsPage"));
+const UserSettingsPage = lazy(() => import("@/pages/user/user.config"));
+const CreateUserPage = lazy(() => import("@/pages/user/user.register"));
+const UserView = lazy(() => import("@/pages/user/user.view"));
+const EnterpriseGroups = lazy(
+  () => import("@/pages/enterprise/enterprise.groups"),
+);
+const PageNotFound = lazy(() => import("@/pages/notFound"));
+
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50/30">
+    <div className="flex flex-col items-center gap-4">
+      <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+      <p className="text-sm text-gray-600">Carregando...</p>
+    </div>
+  </div>
+);
+
+const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<PageLoader />}>{children}</Suspense>
+);
+
+const publicRoutes = [
+  {
+    path: "/",
+    element: <Home />,
+  },
+  {
+    path: "/user/login",
+    element: <UserLogin />,
+  },
+  {
+    path: "/enterprise/login",
+    element: <EnterpriseLogin />,
+  },
+  {
+    path: "/enterprise/register",
+    element: <EnterpriseRegister />,
+  },
+];
+
+const protectedRoutes = [
+  {
+    path: "/dashboard",
+    element: <Dashboard />,
+    name: "Dashboard",
+  },
+  {
+    path: "/releases",
+    element: <ReleasesPage />,
+    name: "Lançamentos",
+  },
+  {
+    path: "/periods",
+    element: <PeriodsPage />,
+    name: "Períodos",
+  },
+  {
+    path: "/user/settings",
+    element: <UserSettingsPage />,
+    name: "Configurações",
+  },
+  {
+    path: "/user/create",
+    element: <CreateUserPage />,
+    name: "Criar Usuário",
+  },
+  {
+    path: "/users/view",
+    element: <UserView />,
+    name: "Gerenciar Usuários",
+  },
+  {
+    path: "/groups",
+    element: <EnterpriseGroups />,
+    name: "Grupos",
+  },
+];
+
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
-    errorElement: <PageNotFound />,
+    errorElement: (
+      <SuspenseWrapper>
+        <PageNotFound />
+      </SuspenseWrapper>
+    ),
     children: [
-      { path: "/", element: <Home /> },
-      { path: "/user/login", element: <UserLogin /> },
-      { path: "/enterprise/login", element: <EnterpriseLogin /> },
-      { path: "/enterprise/register", element: <EnterpriseRegister /> },
+      ...publicRoutes.map((route) => ({
+        ...route,
+        element: <SuspenseWrapper>{route.element}</SuspenseWrapper>,
+      })),
+
       {
         element: (
           <ProtectedRoute>
@@ -31,15 +116,43 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         children: [
-          { index: true, path: "/dashboard", element: <Dashboard /> },
-          { path: "/releases", element: <ReleasesPage /> },
-          { path: "/user/settings", element: <UserSettingsPage /> },
-          { path: "/periods", element: <PeriodsPage /> },
-          { path: "/user/create", element: <CreateUserPage /> },
-          { path: "/users/view", element: <UserView /> },
-          { path: "/groups", element: <EnterpriseGroups /> },
+          {
+            index: true,
+            path: "/dashboard",
+            element: (
+              <SuspenseWrapper>
+                <Dashboard />
+              </SuspenseWrapper>
+            ),
+          },
+          ...protectedRoutes
+            .filter((route) => route.path !== "/dashboard")
+            .map((route) => ({
+              ...route,
+              element: <SuspenseWrapper>{route.element}</SuspenseWrapper>,
+            })),
         ],
+      },
+
+      {
+        path: "*",
+        element: (
+          <SuspenseWrapper>
+            <PageNotFound />
+          </SuspenseWrapper>
+        ),
       },
     ],
   },
 ]);
+export const getRouteConfig = () => ({
+  public: publicRoutes,
+  protected: protectedRoutes,
+});
+export const isValidRoute = (path: string): boolean => {
+  const allPaths = [
+    ...publicRoutes.map((r) => r.path),
+    ...protectedRoutes.map((r) => r.path),
+  ];
+  return allPaths.includes(path);
+};

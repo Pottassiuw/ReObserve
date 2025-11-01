@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,7 +33,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, MoreVertical, Edit, Trash2, Eye } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Plus,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Eye,
+  Search,
+  X,
+  RefreshCw,
+} from "lucide-react";
 import ReleaseModal from "@/components/releaseModal";
 import { useReleasesManagement } from "@/hooks/useReleasesManagement";
 import { toast } from "sonner";
@@ -63,46 +74,87 @@ export default function ReleasesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [releaseToDelete, setReleaseToDelete] = useState<number | null>(null);
 
+  // OTIMIZAÇÃO 1: Estados de filtro
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   useEffect(() => {
     if (canView) {
       loadReleases();
     }
   }, [canView, loadReleases]);
 
-  const openModal = (mode: ModalMode, release = null) => {
-    setModalMode(mode);
-    setSelectedRelease(release);
-    setCurrentRelease(release);
-    setIsModalOpen(true);
-  };
+  // OTIMIZAÇÃO 2: useMemo para filtrar releases
+  // Evita recalcular toda vez que o componente renderiza
+  // Só recalcula quando releases ou searchTerm mudam
+  const filteredReleases = useMemo(() => {
+    if (!searchTerm.trim()) return releases;
 
-  const handleCreate = () => {
+    const term = searchTerm.toLowerCase();
+    return releases.filter((release) => {
+      const numero = release.notaFiscal?.numero?.toString() || "";
+      const valor = release.notaFiscal?.valor?.toString() || "";
+      const lat = release.latitude?.toFixed(4) || "";
+      const lng = release.longitude?.toFixed(4) || "";
+
+      return (
+        numero.toLowerCase().includes(term) ||
+        valor.includes(term) ||
+        lat.includes(term) ||
+        lng.includes(term)
+      );
+    });
+  }, [releases, searchTerm]);
+
+  // OTIMIZAÇÃO 3: useCallback para funções que são passadas como props
+  // Evita recriar a função a cada render
+  const openModal = useCallback(
+    (mode: ModalMode, release = null) => {
+      setModalMode(mode);
+      setSelectedRelease(release);
+      setCurrentRelease(release);
+      setIsModalOpen(true);
+    },
+    [setCurrentRelease],
+  );
+
+  const handleCreate = useCallback(() => {
     if (!canCreate) {
       toast.error("Você não tem permissão para criar lançamentos");
       return;
     }
     openModal("create");
-  };
+  }, [canCreate, openModal]);
 
-  const handleView = (release: any) => {
-    openModal("view", release);
-  };
+  const handleView = useCallback(
+    (release: any) => {
+      openModal("view", release);
+    },
+    [openModal],
+  );
 
-  const handleEdit = (release: any) => {
-    if (!canEdit) {
-      toast.error("Você não tem permissão para editar lançamentos");
-      return;
-    }
-    openModal("edit", release);
-  };
-  const handleDeleteClick = (id: number) => {
-    if (!canDelete) {
-      toast.error("Você não tem permissão para deletar lançamentos");
-      return;
-    }
-    setReleaseToDelete(id);
-    setDeleteDialogOpen(true);
-  };
+  const handleEdit = useCallback(
+    (release: any) => {
+      if (!canEdit) {
+        toast.error("Você não tem permissão para editar lançamentos");
+        return;
+      }
+      openModal("edit", release);
+    },
+    [canEdit, openModal],
+  );
+
+  const handleDeleteClick = useCallback(
+    (id: number) => {
+      if (!canDelete) {
+        toast.error("Você não tem permissão para deletar lançamentos");
+        return;
+      }
+      setReleaseToDelete(id);
+      setDeleteDialogOpen(true);
+    },
+    [canDelete],
+  );
 
   const confirmDelete = async () => {
     if (!releaseToDelete) return;
@@ -128,9 +180,25 @@ export default function ReleasesPage() {
     }
   };
 
+  // OTIMIZAÇÃO 4: Função para refresh manual
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await loadReleases();
+      toast.success("Dados atualizados!");
+    } catch (error) {
+      toast.error("Erro ao atualizar");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Limpar busca
+  const clearSearch = () => setSearchTerm("");
+
   if (!canView) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
         <Alert variant="destructive">
           <AlertDescription>
             Você não tem permissão para visualizar lançamentos.
@@ -141,125 +209,276 @@ export default function ReleasesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+        {/* Header Responsivo */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Lançamentos</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              Lançamentos
+            </h1>
+            <p className="text-sm md:text-base text-gray-600 mt-1">
               Gerencie seus lançamentos de notas fiscais
             </p>
           </div>
-          {canCreate && (
+
+          <div className="flex gap-2">
             <Button
-              onClick={handleCreate}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              onClick={handleRefresh}
+              variant="outline"
+              disabled={isRefreshing}
+              className="flex-1 sm:flex-initial"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Lançamento
+              <RefreshCw
+                className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              <span className="hidden sm:inline">Atualizar</span>
             </Button>
-          )}
+
+            {canCreate && (
+              <Button
+                onClick={handleCreate}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white flex-1 sm:flex-initial"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Novo
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        {/* Tabela de Lançamentos */}
+        {/* Card com Filtros e Tabela */}
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Lançamentos</CardTitle>
-            <CardDescription>
-              Todos os lançamentos de notas fiscais realizados
-            </CardDescription>
+            <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+              <div>
+                <CardTitle>Lista de Lançamentos</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  {filteredReleases.length} de {releases.length} lançamentos
+                </CardDescription>
+              </div>
+
+              {/* Busca */}
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar por número, valor..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 pr-9"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
           </CardHeader>
+
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">Carregando...</p>
+              // SKELETON LOADING
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ))}
               </div>
-            ) : releases.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">Nenhum lançamento encontrado</p>
+            ) : filteredReleases.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">
+                  {searchTerm
+                    ? "Nenhum lançamento encontrado com esse filtro"
+                    : "Nenhum lançamento cadastrado"}
+                </p>
+                {searchTerm && (
+                  <Button variant="link" onClick={clearSearch} className="mt-2">
+                    Limpar filtro
+                  </Button>
+                )}
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Número da Nota</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Localização</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {releases.map((release) => (
-                    <TableRow key={release.id}>
-                      <TableCell>
-                        {release.notaFiscal?.numero ||
-                          release.notaFiscalId ||
-                          "-"}
-                      </TableCell>
-                      <TableCell>
-                        {release.notaFiscal?.valor
-                          ? `R$ ${release.notaFiscal.valor.toFixed(2)}`
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {release.latitude?.toFixed(4)},{" "}
-                        {release.longitude?.toFixed(4)}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(release.data_lancamento).toLocaleDateString(
-                          "pt-BR",
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleView(release)}
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              Visualizar
-                            </DropdownMenuItem>
-                            {canEdit && (
-                              <DropdownMenuItem
-                                onClick={() => handleEdit(release)}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Editar
-                              </DropdownMenuItem>
-                            )}
-                            {canDelete && (
-                              <>
-                                <DropdownMenuSeparator />
+              <>
+                {/* VERSÃO DESKTOP - Tabela */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Número da Nota</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Localização</TableHead>
+                        <TableHead>Data</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredReleases.map((release) => (
+                        <TableRow key={release.id}>
+                          <TableCell className="font-medium">
+                            {release.notaFiscal?.numero ||
+                              release.notaFiscalId ||
+                              "-"}
+                          </TableCell>
+                          <TableCell>
+                            {release.notaFiscal?.valor
+                              ? `R$ ${release.notaFiscal.valor.toFixed(2)}`
+                              : "-"}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {release.latitude?.toFixed(4)},{" "}
+                            {release.longitude?.toFixed(4)}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(
+                              release.data_lancamento,
+                            ).toLocaleDateString("pt-BR")}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
                                 <DropdownMenuItem
-                                  onClick={() => handleDeleteClick(release.id)}
-                                  className="text-red-600"
+                                  onClick={() => handleView(release)}
                                 >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Excluir
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Visualizar
                                 </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+                                {canEdit && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleEdit(release)}
+                                  >
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                )}
+                                {canDelete && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleDeleteClick(release.id)
+                                      }
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Excluir
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* VERSÃO MOBILE - Cards */}
+                <div className="md:hidden space-y-3">
+                  {filteredReleases.map((release) => (
+                    <Card key={release.id} className="overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-600">
+                              Nota Fiscal
+                            </p>
+                            <p className="text-lg font-bold text-gray-900">
+                              {release.notaFiscal?.numero ||
+                                release.notaFiscalId ||
+                                "-"}
+                            </p>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleView(release)}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                Visualizar
+                              </DropdownMenuItem>
+                              {canEdit && (
+                                <DropdownMenuItem
+                                  onClick={() => handleEdit(release)}
+                                >
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Editar
+                                </DropdownMenuItem>
+                              )}
+                              {canDelete && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleDeleteClick(release.id)
+                                    }
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Excluir
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-gray-600">Valor</p>
+                            <p className="font-semibold text-green-600">
+                              {release.notaFiscal?.valor
+                                ? `R$ ${release.notaFiscal.valor.toFixed(2)}`
+                                : "-"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Data</p>
+                            <p className="font-medium">
+                              {new Date(
+                                release.data_lancamento,
+                              ).toLocaleDateString("pt-BR")}
+                            </p>
+                          </div>
+                          <div className="col-span-2">
+                            <p className="text-gray-600">Localização</p>
+                            <p className="font-mono text-xs text-gray-700">
+                              {release.latitude?.toFixed(4)},{" "}
+                              {release.longitude?.toFixed(4)}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -277,7 +496,7 @@ export default function ReleasesPage() {
 
         {/* Dialog de Confirmação de Exclusão */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
+          <AlertDialogContent className="max-w-md mx-4">
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
               <AlertDialogDescription>
@@ -285,11 +504,13 @@ export default function ReleasesPage() {
                 pode ser desfeita.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogCancel className="w-full sm:w-auto">
+                Cancelar
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={confirmDelete}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
               >
                 Excluir
               </AlertDialogAction>

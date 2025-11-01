@@ -9,7 +9,6 @@ export interface DashboardStats {
   } | null;
   pendencias: number;
 }
-
 export interface DadosMensais {
   mes: string;
   entradas: number;
@@ -30,20 +29,12 @@ export interface DashboardData {
   categorias: { name: string; value: number }[];
 }
 
-export const buscarDadosDashboard = async (
-  empresaId: number,
-): Promise<DashboardData> => {
+export const buscarDadosDashboard = async (): Promise<DashboardData> => {
   try {
-    if (!empresaId) {
-      throw new Error("ID da empresa é obrigatório");
-    }
-
-    const response = await Client.get(`/enterprises/dashboard`);
-
+    const response = await Client.get("/enterprises/dashboard");
     if (!response || !response.data) {
       throw new Error("Nenhum dado recebido");
     }
-
     return response.data.data;
   } catch (error) {
     console.error("Erro ao buscar dados do dashboard:", error);

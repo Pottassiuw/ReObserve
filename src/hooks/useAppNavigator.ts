@@ -13,6 +13,9 @@ export const useAppNavigator = () => {
     navigateToLogin: () => {
       navigate("/user/login");
     },
+    navigateToEnterpriseLogin: () => {
+      navigate("/enterprise/login");
+    },
     navigateToRegisterEnterprise: () => {
       navigate("/enterprise/register");
     },

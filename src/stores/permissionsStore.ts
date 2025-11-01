@@ -15,7 +15,7 @@ export enum Permissoes {
 interface PermissionsStore {
   permissions: Permissoes[];
   isLoading: boolean;
-
+  permissionsLoaded: boolean;
   setPermissions: (permissions: Permissoes[]) => void;
   hasPermission: (permission: Permissoes) => boolean;
   hasAnyPermission: (permissions: Permissoes[]) => boolean;
@@ -33,12 +33,12 @@ interface PermissionsStore {
   canDeletePeriod: () => boolean;
   isAdmin: () => boolean;
 }
-
 export const usePermissionsStore = create<PermissionsStore>((set, get) => ({
   permissions: [],
   isLoading: false,
-
-  setPermissions: (permissions) => set({ permissions }),
+  permissionsLoaded: false,
+  setPermissions: (perms) =>
+    set({ permissions: perms, permissionsLoaded: true }),
 
   hasPermission: (permission) => {
     const { permissions } = get();
