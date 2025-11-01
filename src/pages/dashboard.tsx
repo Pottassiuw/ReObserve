@@ -34,12 +34,10 @@ import {
 } from "lucide-react";
 import { buscarDadosDashboard } from "@/api/endpoints/dashboard";
 import type { DashboardData } from "@/api/endpoints/dashboard";
+import { useAuthStore } from "@/stores/authStore";
 
-interface DashboardProps {
-  empresaId: number; // Recebe o ID da empresa como prop
-}
-
-export default function Dashboard({ empresaId }: DashboardProps) {
+export default function Dashboard() {
+  const { userId, userType } = useAuthStore();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,10 +46,23 @@ export default function Dashboard({ empresaId }: DashboardProps) {
 
   useEffect(() => {
     const carregarDados = async () => {
+      if (!userId) {
+        setError("Usuário não autenticado");
+        setLoading(false);
+        return;
+      }
+
+      // Só empresas ou usuários têm dashboard - ajuste conforme sua regra de negócio
+      if (userType !== "enterprise" && userType !== "user") {
+        setError("Tipo de usuário inválido");
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
-        const dadosDashboard = await buscarDadosDashboard(empresaId);
+        const dadosDashboard = await buscarDadosDashboard(userId);
         setData(dadosDashboard);
       } catch (err) {
         setError("Erro ao carregar dados do dashboard");
@@ -62,7 +73,7 @@ export default function Dashboard({ empresaId }: DashboardProps) {
     };
 
     carregarDados();
-  }, [empresaId]);
+  }, [userId, userType]);
 
   if (loading) {
     return (
