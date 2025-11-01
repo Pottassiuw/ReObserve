@@ -38,7 +38,7 @@ export const buscarDadosDashboard = async (
       throw new Error("ID da empresa é obrigatório");
     }
 
-    const response = await Client.get(`/enterprise/${empresaId}/dashboard`);
+    const response = await Client.get(`/enterprise/dashboard`);
 
     if (!response || !response.data) {
       throw new Error("Nenhum dado recebido");
