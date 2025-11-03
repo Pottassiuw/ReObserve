@@ -1,16 +1,24 @@
 import { Outlet } from "react-router-dom";
 import { Toaster } from "sonner";
-import { usePermissionsLoader } from "./hooks/usePermissionsLoader";
-function App() {
+import { usePermissionsLoader } from "@/hooks/usePermissionsLoader";
+import { useAuthStore } from "@/stores/authStore";
+import { useEffect } from "react";
+
+export default function App() {
+  const { initialize, initialized } = useAuthStore();
+
+  useEffect(() => {
+    if (!initialized) {
+      initialize();
+    }
+  }, [initialized, initialize]);
+
   usePermissionsLoader();
+
   return (
-    <div className="flex flex-col min-h-screen">
-      <Toaster position="top-center" richColors closeButton duration={4000} />
-      <div className="min-h-screen">
-        <Outlet />
-      </div>
-    </div>
+    <>
+      <Toaster position="top-center" richColors />
+      <Outlet />
+    </>
   );
 }
-
-export default App;

@@ -30,12 +30,11 @@ export const useReleasesManagement = () => {
   if (!userId) throw new Error("Id deve ser fornecido");
   const getEmpresaId = useCallback((): number => {
     if (userType === "enterprise") {
-      return userId; // userId é o empresaId
+      return userId; 
     }
     return userId;
   }, [userId, userType]);
 
-  // Carregar lançamentos
   const loadReleases = useCallback(async () => {
     if (!canViewRelease()) {
       setError("Você não tem permissão para visualizar lançamentos");
@@ -131,7 +130,6 @@ export const useReleasesManagement = () => {
     },
     [canCreateRelease, userId, getEmpresaId, addRelease, setLoading, setError],
   );
-  // Atualizar lançamento
   const updateReleaseById = useCallback(
     async (id: number, data: Partial<Lancamento>) => {
       if (!canEditRelease()) {
@@ -162,7 +160,6 @@ export const useReleasesManagement = () => {
     [canEditRelease, updateRelease, setLoading, setError],
   );
 
-  // Deletar lançamento
   const deleteRelease = useCallback(
     async (id: number) => {
       if (!canDeleteRelease()) {

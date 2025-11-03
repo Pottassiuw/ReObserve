@@ -9,14 +9,42 @@ import {
 import { Users, Mail, Calendar } from "lucide-react";
 import { useUserStore } from "@/stores/userStore";
 import { useAuthStore } from "@/stores/authStore";
+import { usePermissionsStore } from "@/stores/permissionsStore";
+import { retornarUsuario } from "@/api/endpoints/users";
 
 export default function UserView() {
   const { user, isLoading, retornarUsuarios } = useUserStore();
-  const { userId } = useAuthStore();
+  const { userId, userType } = useAuthStore();
+  const { isAdmin } = usePermissionsStore();
+
   useEffect(() => {
-    if (!userId) return;
-    retornarUsuarios(userId);
-  }, [userId]);
+    const loadUsers = async () => {
+      if (!userId) return;
+
+      if (userType === "user" && !isAdmin()) {
+        console.log("Usuário não tem permissão de admin para visualizar outros usuários");
+        return;
+      }
+
+      try {
+        let targetId = userId;
+        if (userType === "enterprise") {
+          targetId = userId;
+        } 
+        else if (userType === "user") {
+          const userData = await retornarUsuario(userId);
+          targetId = userData.empresaId || userId;
+        }
+
+        console.log("Buscando usuários para empresa:", targetId);
+        retornarUsuarios(targetId);
+      } catch (error) {
+        console.error("Erro ao carregar usuários:", error);
+      }
+    };
+
+    loadUsers();
+  }, [userId, userType]);
 
   const users = Array.isArray(user) ? user : [];
 

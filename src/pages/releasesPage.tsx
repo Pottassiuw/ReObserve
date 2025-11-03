@@ -55,7 +55,6 @@ export default function ReleasesPage() {
   const {
     releases,
     isLoading,
-    error,
     loadReleases,
     createRelease,
     deleteRelease,
@@ -74,7 +73,6 @@ export default function ReleasesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [releaseToDelete, setReleaseToDelete] = useState<number | null>(null);
 
-  // OTIMIZAÇÃO 1: Estados de filtro
   const [searchTerm, setSearchTerm] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -84,9 +82,6 @@ export default function ReleasesPage() {
     }
   }, [canView, loadReleases]);
 
-  // OTIMIZAÇÃO 2: useMemo para filtrar releases
-  // Evita recalcular toda vez que o componente renderiza
-  // Só recalcula quando releases ou searchTerm mudam
   const filteredReleases = useMemo(() => {
     if (!searchTerm.trim()) return releases;
 
@@ -106,8 +101,6 @@ export default function ReleasesPage() {
     });
   }, [releases, searchTerm]);
 
-  // OTIMIZAÇÃO 3: useCallback para funções que são passadas como props
-  // Evita recriar a função a cada render
   const openModal = useCallback(
     (mode: ModalMode, release = null) => {
       setModalMode(mode);
@@ -132,7 +125,6 @@ export default function ReleasesPage() {
     },
     [openModal],
   );
-
   const handleEdit = useCallback(
     (release: any) => {
       if (!canEdit) {
@@ -143,7 +135,6 @@ export default function ReleasesPage() {
     },
     [canEdit, openModal],
   );
-
   const handleDeleteClick = useCallback(
     (id: number) => {
       if (!canDelete) {
@@ -180,7 +171,6 @@ export default function ReleasesPage() {
     }
   };
 
-  // OTIMIZAÇÃO 4: Função para refresh manual
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -193,9 +183,7 @@ export default function ReleasesPage() {
     }
   };
 
-  // Limpar busca
   const clearSearch = () => setSearchTerm("");
-
   if (!canView) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -234,7 +222,6 @@ export default function ReleasesPage() {
               />
               <span className="hidden sm:inline">Atualizar</span>
             </Button>
-
             {canCreate && (
               <Button
                 onClick={handleCreate}
@@ -246,15 +233,6 @@ export default function ReleasesPage() {
             )}
           </div>
         </div>
-
-        {/* Error Alert */}
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Card com Filtros e Tabela */}
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
@@ -288,7 +266,6 @@ export default function ReleasesPage() {
 
           <CardContent>
             {isLoading ? (
-              // SKELETON LOADING
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
                   <div key={i} className="flex items-center gap-4">
@@ -482,7 +459,6 @@ export default function ReleasesPage() {
             )}
           </CardContent>
         </Card>
-
         {/* Modal de Lançamento */}
         <ReleaseModal
           open={isModalOpen}

@@ -20,12 +20,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, Shield, Edit, Trash2, Check, X } from "lucide-react";
+import { Plus, Shield, Trash2, Check, X, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { Permissoes } from "@/stores/permissionsStore";
 import { criarGrupo, deletarGrupo, listarGrupos } from "@/api/endpoints/groups";
 import type { Grupo } from "@/types";
-// Schema de validação com Zod
+
 const grupoSchema = z.object({
   nome: z
     .string()
@@ -67,7 +67,6 @@ export default function EnterpriseGroups() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingGrupo, setEditingGrupo] = useState<Grupo | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [grupoToDelete, setGrupoToDelete] = useState<number | null>(null);
   const [formData, setFormData] = useState({
@@ -98,43 +97,30 @@ export default function EnterpriseGroups() {
     }
   };
 
-  const handleOpenModal = (grupo?: Grupo) => {
-    if (grupo) {
-      setEditingGrupo(grupo);
-      setFormData({
-        nome: grupo.nome,
-        permissoes: grupo.permissoes || [],
-      });
-    } else {
-      setEditingGrupo(null);
-      setFormData({
-        nome: "",
-        permissoes: [],
-      });
-    }
+  const handleOpenModal = () => {
+    setFormData({ nome: "", permissoes: [] });
     setIsModalOpen(true);
   };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setEditingGrupo(null);
-    setFormData({
-      nome: "",
-      permissoes: [],
-    });
+    setFormData({ nome: "", permissoes: [] });
     setValidationErrors({});
   };
+
   const togglePermissao = (permissao: string) => {
-    setFormData((prev) => ({
+    setFormData((prev: any) => ({
       ...prev,
       permissoes: prev.permissoes.includes(permissao)
-        ? prev.permissoes.filter((p) => p !== permissao)
+        ? prev.permissoes.filter((p: string) => p !== permissao)
         : [...prev.permissoes, permissao],
     }));
   };
+
   const handleSubmit = async () => {
     setValidationErrors({});
-    setError(null);
-    const toastId = toast.loading("Criando grupo");
+    const toastId = toast.loading("Criando grupo...");
+
     try {
       grupoSchema.parse(formData);
     } catch (err) {
@@ -146,173 +132,159 @@ export default function EnterpriseGroups() {
           }
         });
         setValidationErrors(errors);
+        toast.dismiss(toastId);
         return;
       }
     }
+
     try {
-      if (!userId) return new Error("Id não existe");
-      const dados = {
+      if (!userId) throw new Error("ID não existe");
+
+      await criarGrupo({
         nome: formData.nome,
         permissoes: formData.permissoes,
         empresaId: userId,
-      };
-      await criarGrupo(dados);
-      toast.success("Grupo Criado!", { id: toastId });
-      console.log("✅ Salvando grupo:", formData);
+      });
+
+      toast.success("Grupo criado!", { id: toastId });
       handleCloseModal();
       loadGrupos();
     } catch (err: any) {
-      setError(err.message || "Erro ao salvar grupo");
-      toast.error("Erro ao criar grupo", { id: toastId });
+      toast.error(err.message || "Erro ao criar grupo", { id: toastId });
     }
   };
+
   const handleDeleteClick = (id: number) => {
-    console.log("🗑️ handleDeleteClick chamado com ID:", id);
     setGrupoToDelete(id);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
-    console.log("✅ confirmDelete chamado - grupoToDelete:", grupoToDelete);
-
-    const idToDelete = grupoToDelete;
-
-    if (!idToDelete) {
-      console.log("❌ grupoToDelete é null, abortando");
-      toast.error("Erro: ID do grupo não encontrado");
-      return;
-    }
+    if (!grupoToDelete) return;
 
     const toastId = toast.loading("Deletando grupo...");
     try {
-      if (!userId) {
-        console.log("❌ userId não existe");
-        toast.error("Erro: Usuário não identificado", { id: toastId });
-        return;
-      }
-      console.log("🔄 Chamando deletarGrupo com ID:", idToDelete);
-      await deletarGrupo(idToDelete);
-      toast.success("Grupo deletado com sucesso!", { id: toastId });
-      console.log("✅ Grupo deletado com sucesso:", idToDelete);
+      await deletarGrupo(grupoToDelete);
+      toast.success("Grupo deletado!", { id: toastId });
       setDeleteDialogOpen(false);
       setGrupoToDelete(null);
       loadGrupos();
     } catch (err: any) {
-      console.error("❌ Erro ao deletar:", err);
       toast.error(err.message || "Erro ao deletar grupo", { id: toastId });
-      setError(err.message || "Erro ao deletar grupo");
     }
   };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 md:mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
               Grupos e Permissões
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-sm md:text-base text-gray-600 mt-2">
               Gerencie os grupos de usuários e suas permissões
             </p>
           </div>
           <Button
-            onClick={() => handleOpenModal()}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            onClick={handleOpenModal}
+            className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700"
           >
             <Plus className="w-4 h-4 mr-2" />
             Novo Grupo
           </Button>
         </div>
 
-        {/* Error Alert */}
         {error && (
           <Alert variant="destructive" className="mb-6">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        {/* Cards de Resumo */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card>
+        {/* Card de Resumo */}
+        <div className="mb-6 md:mb-8">
+          <Card className="border-0 shadow-lg">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">
                     Total de Grupos
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-3xl font-bold text-indigo-900">
                     {grupos.length}
                   </p>
                 </div>
-                <Shield className="w-8 h-8 text-indigo-600" />
+                <div className="p-3 rounded-full bg-indigo-100">
+                  <Shield className="w-8 h-8 text-indigo-600" />
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Lista de Grupos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {isLoading ? (
-            <div className="col-span-full text-center py-12">
+            <div className="col-span-full flex flex-col items-center justify-center py-12">
+              <Loader2 className="w-12 h-12 animate-spin text-indigo-600 mb-4" />
               <p className="text-gray-500">Carregando grupos...</p>
             </div>
           ) : grupos.length === 0 ? (
             <div className="col-span-full text-center py-12">
-              <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Nenhum grupo encontrado</p>
+              <div className="flex justify-center mb-4">
+                <div className="p-4 rounded-full bg-gray-100">
+                  <Shield className="w-12 h-12 text-gray-400" />
+                </div>
+              </div>
+              <p className="text-gray-500 font-medium">
+                Nenhum grupo encontrado
+              </p>
               <p className="text-sm text-gray-400 mt-2">
                 Crie seu primeiro grupo para organizar permissões
               </p>
             </div>
           ) : (
-            grupos.map((grupo) => (
+            grupos.map((grupo: any) => (
               <Card
                 key={grupo.id}
-                className="hover:shadow-lg transition-shadow"
+                className="hover:shadow-lg transition-all border-0"
               >
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{grupo.nome}</CardTitle>
+                    <CardTitle className="text-lg text-indigo-900">
+                      {grupo.nome}
+                    </CardTitle>
                     <div className="flex gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleOpenModal(grupo)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation;
-                          handleDeleteClick(grupo.id);
-                        }}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                        onClick={() => handleDeleteClick(grupo.id)}
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                   <CardDescription>
-                    {grupo.permissoes?.length || 0} permissões configuradas
+                    {grupo.permissoes?.length || 0} permissões
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {grupo.permissoes?.slice(0, 4).map((perm) => (
+                    {grupo.permissoes?.slice(0, 4).map((perm: any) => (
                       <div
                         key={perm}
                         className="flex items-center text-sm text-gray-600"
                       >
-                        <Check className="w-4 h-4 text-green-600 mr-2" />
-                        {permissoesLabels[perm as Permissoes] || perm}
+                        <Check className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
+                        <span className="truncate">
+                          {permissoesLabels[perm as Permissoes] || perm}
+                        </span>
                       </div>
                     ))}
                     {grupo.permissoes && grupo.permissoes.length > 4 && (
-                      <p className="text-sm text-gray-500 mt-2">
+                      <p className="text-sm text-indigo-600 font-medium mt-2">
                         +{grupo.permissoes.length - 4} mais...
                       </p>
                     )}
@@ -323,18 +295,18 @@ export default function EnterpriseGroups() {
           )}
         </div>
 
-        {/* Modal de Criar/Editar Grupo */}
+        {/* Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b">
+            <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-4 md:p-6 border-b bg-gradient-to-r from-indigo-50 to-purple-50">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold text-indigo-600">
-                      {editingGrupo ? "Editar Grupo" : "Novo Grupo"}
+                    <h2 className="text-lg md:text-xl font-semibold text-indigo-900">
+                      Novo Grupo
                     </h2>
                     <p className="text-sm text-gray-600 mt-1">
-                      Configure o nome e as permissões do grupo
+                      Configure o nome e as permissões
                     </p>
                   </div>
                   <Button
@@ -348,18 +320,17 @@ export default function EnterpriseGroups() {
                 </div>
               </div>
 
-              <div className="p-6 space-y-6">
-                {/* Nome do Grupo */}
+              <div className="p-4 md:p-6 space-y-6">
                 <div className="space-y-2">
-                  <label className="text-md font-medium">Nome do Grupo *</label>
+                  <label className="text-sm font-medium">Nome do Grupo *</label>
                   <input
                     type="text"
-                    placeholder="Ex: Gerentes, Operadores, etc."
+                    placeholder="Ex: Gerentes, Operadores"
                     value={formData.nome}
                     onChange={(e) =>
                       setFormData({ ...formData, nome: e.target.value })
                     }
-                    className={`w-full px-3 py-2 mt-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                       validationErrors.nome ? "border-red-500" : ""
                     }`}
                   />
@@ -370,11 +341,10 @@ export default function EnterpriseGroups() {
                   )}
                 </div>
 
-                {/* Permissões */}
                 <div className="space-y-3">
-                  <label className="text-md font-medium">Permissões *</label>
+                  <label className="text-sm font-medium">Permissões *</label>
                   <div
-                    className={`border rounded-lg mt-2 p-5 space-y-3 bg-gray-50 max-h-96 overflow-y-auto ${
+                    className={`border rounded-lg p-4 space-y-2 max-h-96 overflow-y-auto ${
                       validationErrors.permissoes ? "border-red-500" : ""
                     }`}
                   >
@@ -386,7 +356,7 @@ export default function EnterpriseGroups() {
                       >
                         <div className="flex items-center h-5 mt-0.5">
                           <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
                               formData.permissoes.includes(permissao)
                                 ? "bg-indigo-600 border-indigo-600"
                                 : "border-gray-300"
@@ -397,8 +367,8 @@ export default function EnterpriseGroups() {
                             )}
                           </div>
                         </div>
-                        <div className="flex-1">
-                          <label className="text-sm font-medium text-gray-900 cursor-pointer">
+                        <div className="flex-1 min-w-0">
+                          <label className="text-sm font-medium text-gray-900 cursor-pointer block">
                             {permissoesLabels[permissao]}
                           </label>
                           <p className="text-xs text-gray-500 mt-1">
@@ -408,27 +378,27 @@ export default function EnterpriseGroups() {
                       </div>
                     ))}
                   </div>
-                  {validationErrors.permissoes ? (
+                  {validationErrors.permissoes && (
                     <p className="text-sm text-red-600">
                       {validationErrors.permissoes}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-gray-500">
-                      Selecione as permissões que este grupo terá acesso
                     </p>
                   )}
                 </div>
               </div>
 
-              <div className="p-6 border-t flex justify-end gap-3">
-                <Button variant="outline" onClick={handleCloseModal}>
+              <div className="p-4 md:p-6 border-t flex flex-col sm:flex-row justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handleCloseModal}
+                  className="w-full sm:w-auto"
+                >
                   Cancelar
                 </Button>
                 <Button
                   onClick={handleSubmit}
-                  className="bg-indigo-600 hover:bg-indigo-700"
+                  className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700"
                 >
-                  {editingGrupo ? "Salvar Alterações" : "Criar Grupo"}
+                  Criar Grupo
                 </Button>
               </div>
             </div>
@@ -441,9 +411,8 @@ export default function EnterpriseGroups() {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja excluir este grupo? Usuários associados a
-                este grupo perderão suas permissões. Esta ação não pode ser
-                desfeita.
+                Tem certeza que deseja excluir este grupo? Esta ação não pode
+                ser desfeita.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

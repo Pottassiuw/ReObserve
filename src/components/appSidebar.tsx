@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -11,113 +11,124 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
-  FileEdit,
-  Lock,
+  FileText,
+  Calendar,
   UserPlus,
   Users,
-  Boxes,
+  FolderTree,
   Settings,
   LogOut,
-  ChevronRight,
+  Building2,
+  User,
 } from "lucide-react";
-import Logo from "@/assets/ProjectLogo.png";
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissionsStore } from "@/stores/permissionsStore";
 import { useAppNavigator } from "@/hooks/useAppNavigator";
 import { useUserStore } from "@/stores/userStore";
 import { useEnterpriseStore } from "@/stores/enterpriseStore";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { state } = useSidebar();
 
-  const { userType, logout } = useAuthStore();
-  const { canViewRelease, canViewPeriod, isAdmin, permissionsLoaded } =
-    usePermissionsStore();
+  const { userType, logout, userId } = useAuthStore();
+  const {
+    canViewRelease,
+    canViewPeriod,
+    isAdmin,
+    permissionsLoaded,
+    permissions,
+  } = usePermissionsStore();
   const { navigateToLogin } = useAppNavigator();
   const { user } = useUserStore();
   const { enterprise } = useEnterpriseStore();
-  if (!permissionsLoaded) return null;
-  const permissions = useMemo(
-    () => ({
-      canAccessDashboard: userType === "enterprise" || isAdmin(),
-      canManageUsers: userType === "enterprise",
-      showManagement: canViewRelease() || canViewPeriod(),
-    }),
-    [userType, isAdmin, canViewRelease, canViewPeriod],
-  );
 
-  const mainMenuItems = useMemo(
-    () => [
-      {
-        id: "dashboard",
-        label: "Dashboard",
-        icon: LayoutDashboard,
-        path: "/dashboard",
-        show: permissions.canAccessDashboard,
-      },
-      {
-        id: "settings",
-        label: "Configurações",
-        icon: Settings,
-        path: "/user/settings",
-        show: true,
-      },
-    ],
-    [permissions.canAccessDashboard],
-  );
+  useEffect(() => {
+    if (permissionsLoaded) {
+      console.log("Permissões carregadas:", permissions);
+      console.log("Can view release:", canViewRelease());
+      console.log("Can view period:", canViewPeriod());
+    }
+  }, [permissionsLoaded, permissions, canViewRelease, canViewPeriod]);
 
-  const managementItems = useMemo(
-    () => [
-      {
-        id: "releases",
-        label: "Lançamentos",
-        icon: FileEdit,
-        path: "/releases",
-        show: canViewRelease(),
-      },
-      {
-        id: "periods",
-        label: "Períodos",
-        icon: Lock,
-        path: "/periods",
-        show: canViewPeriod(),
-      },
-    ],
-    [canViewRelease, canViewPeriod],
-  );
+  if (!permissionsLoaded || !userId) {
+    return null;
+  }
 
-  const userManagementItems = useMemo(
-    () => [
-      {
-        id: "create-user",
-        label: "Criar Usuário",
-        icon: UserPlus,
-        path: "/user/create",
-        show: permissions.canManageUsers,
-      },
-      {
-        id: "manage-users",
-        label: "Gerenciar Usuários",
-        icon: Users,
-        path: "/users/view",
-        show: permissions.canManageUsers,
-      },
-      {
-        id: "groups",
-        label: "Grupos",
-        icon: Boxes,
-        path: "/groups",
-        show: permissions.canManageUsers,
-      },
-    ],
-    [permissions.canManageUsers],
-  );
+  const isAdminUser = isAdmin();
+  const canSeeReleases = canViewRelease();
+  const canSeePeriods = canViewPeriod();
+
+  const menuItems = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      path: "/dashboard",
+      show: userType === "enterprise" || isAdminUser,
+      group: "main",
+    },
+    {
+      id: "releases",
+      label: "Lançamentos",
+      icon: FileText,
+      path: "/releases",
+      show: canSeeReleases,
+      group: "management",
+    },
+    {
+      id: "periods",
+      label: "Períodos",
+      icon: Calendar,
+      path: "/periods",
+      show: canSeePeriods,
+      group: "management",
+    },
+    {
+      id: "create-user",
+      label: "Criar Usuário",
+      icon: UserPlus,
+      path: "/user/create",
+      show: userType === "enterprise",
+      group: "users",
+    },
+    {
+      id: "manage-users",
+      label: "Gerenciar Usuários",
+      icon: Users,
+      path: "/users/view",
+      show: userType === "enterprise" || isAdminUser,
+      group: "users",
+    },
+    {
+      id: "groups",
+      label: "Grupos",
+      icon: FolderTree,
+      path: "/groups",
+      show: userType === "enterprise",
+      group: "users",
+    },
+    {
+      id: "settings",
+      label: "Configurações",
+      icon: Settings,
+      path: "/user/settings",
+      show: true,
+      group: "main",
+    },
+  ];
 
   const handleNavigation = useCallback(
     (path: string) => {
@@ -148,157 +159,216 @@ export default function AppSidebar() {
     [userType, enterprise, currentUser],
   );
 
-  return (
-    <Sidebar collapsible="icon">
-      {/* Header com Logo */}
-      <SidebarHeader className="border-b p-4">
-        <div
-          className="flex items-center gap-3 cursor-pointer group"
-          onClick={() => handleNavigation("/")}
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-md group-hover:shadow-lg transition-all">
-            <img src={Logo} alt="logo" className="h-6 w-6" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-bold text-sm text-indigo-900">ReObserve</span>
-            <span className="text-xs text-muted-foreground">
-              Sistema de Gestão
-            </span>
-          </div>
-        </div>
-      </SidebarHeader>
+  const getGroupItems = (group: string) => {
+    return menuItems.filter((item) => item.show && item.group === group);
+  };
 
-      <SidebarContent className="px-2">
-        {/* Menu Principal */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
-            Principal
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainMenuItems
-                .filter((item) => item.show)
-                .map((item) => (
+  const hasManagement = getGroupItems("management").length > 0;
+  const hasUsers = getGroupItems("users").length > 0;
+
+  const isCollapsed = state === "collapsed";
+
+  const renderMenuButton = (item: any) => {
+    const isActive =
+      item.group === "management"
+        ? location.pathname.includes(item.path)
+        : location.pathname === item.path;
+
+    const button = (
+      <SidebarMenuButton
+        className={`group cursor-pointer relative transition-colors duration-150
+          ${isCollapsed ? "w-10 h-10 justify-center" : "w-full justify-start"}
+          ${
+            isActive
+              ? "bg-indigo-50 text-indigo-900 font-medium"
+              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+          }`}
+        onClick={() => handleNavigation(item.path)}
+        isActive={isActive}
+      >
+        <item.icon
+          className={`h-5 w-5 ${isActive ? "text-indigo-600" : "text-slate-500"}`}
+        />
+        {!isCollapsed && <span className="text-sm ml-3">{item.label}</span>}
+        {!isCollapsed && isActive && (
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" />
+        )}
+      </SidebarMenuButton>
+    );
+
+    if (isCollapsed) {
+      return (
+        <Tooltip key={item.id} delayDuration={0}>
+          <TooltipTrigger asChild>{button}</TooltipTrigger>
+          <TooltipContent side="right" className="font-medium">
+            {item.label}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return button;
+  };
+
+  return (
+    <TooltipProvider>
+      <Sidebar 
+        collapsible="icon" 
+        className="border-r bg-white h-screen sticky top-0"
+      >
+        <SidebarHeader className="border-b px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 shadow-sm flex-shrink-0">
+              <span className="text-white text-xl font-bold">R</span>
+            </div>
+            {!isCollapsed && (
+              <div className="flex flex-col">
+                <span className="font-semibold text-base text-slate-900">
+                  ReObserve
+                </span>
+                <span className="text-xs text-slate-500">
+                  Sistema de Gestão
+                </span>
+              </div>
+            )}
+          </div>
+        </SidebarHeader>
+
+        <SidebarContent className="px-3 py-4">
+          {/* Menu Principal */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {getGroupItems("main").map((item) => (
                   <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton
-                      className="group relative hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700 data-[active=true]:font-semibold transition-all rounded-lg"
-                      onClick={() => handleNavigation(item.path)}
-                      isActive={location.pathname === item.path}
-                      tooltip={item.label}
-                    >
-                      <item.icon className="h-4 w-4 group-data-[active=true]:text-indigo-600" />
-                      <span>{item.label}</span>
-                      <ChevronRight className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </SidebarMenuButton>
+                    {renderMenuButton(item)}
                   </SidebarMenuItem>
                 ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-        {/* Gerenciamento */}
-        {permissions.showManagement && (
-          <>
-            <Separator className="my-2" />
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
-                Gerenciamento
-              </SidebarGroupLabel>
+          {/* Gerenciamento */}
+          {hasManagement && (
+            <SidebarGroup className="mt-6">
+              {!isCollapsed && (
+                <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">
+                  Gerenciamento
+                </SidebarGroupLabel>
+              )}
               <SidebarGroupContent>
-                <SidebarMenu>
-                  {managementItems
-                    .filter((item) => item.show)
-                    .map((item) => (
-                      <SidebarMenuItem key={item.id}>
-                        <SidebarMenuButton
-                          className="group relative hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700 data-[active=true]:font-semibold transition-all rounded-lg"
-                          onClick={() => handleNavigation(item.path)}
-                          isActive={location.pathname.includes(item.path)}
-                          tooltip={item.label}
-                        >
-                          <item.icon className="h-4 w-4 text-indigo-600" />
-                          <span>{item.label}</span>
-                          <ChevronRight className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                <SidebarMenu className="space-y-1">
+                  {getGroupItems("management").map((item) => (
+                    <SidebarMenuItem key={item.id}>
+                      {renderMenuButton(item)}
+                    </SidebarMenuItem>
+                  ))}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
-          </>
-        )}
+          )}
 
-        {/* Usuários  */}
-        {permissions.canManageUsers && (
-          <>
-            <Separator className="my-2" />
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
-                Usuários
-              </SidebarGroupLabel>
+          {/* Usuários */}
+          {hasUsers && (
+            <SidebarGroup className="mt-6">
+              {!isCollapsed && (
+                <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">
+                  Usuários
+                </SidebarGroupLabel>
+              )}
               <SidebarGroupContent>
-                <SidebarMenu>
-                  {userManagementItems
-                    .filter((item) => item.show)
-                    .map((item) => (
-                      <SidebarMenuItem key={item.id}>
-                        <SidebarMenuButton
-                          className="group relative hover:bg-indigo-50 data-[active=true]:bg-indigo-100 data-[active=true]:text-indigo-700 data-[active=true]:font-semibold transition-all rounded-lg"
-                          onClick={() => handleNavigation(item.path)}
-                          isActive={location.pathname === item.path}
-                          tooltip={item.label}
-                        >
-                          <item.icon className="h-4 w-4 text-indigo-600" />
-                          <span>{item.label}</span>
-                          <ChevronRight className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                <SidebarMenu className="space-y-1">
+                  {getGroupItems("users").map((item) => (
+                    <SidebarMenuItem key={item.id}>
+                      {renderMenuButton(item)}
+                    </SidebarMenuItem>
+                  ))}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
-          </>
-        )}
-      </SidebarContent>
+          )}
+        </SidebarContent>
 
-      {/* Footer com Perfil */}
-      <SidebarFooter className="border-t p-4">
-        <div className="space-y-3">
-          {/* Card do Usuário */}
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-br from-indigo-50 to-indigo-100/50 border border-indigo-100">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-white text-sm font-bold shadow-md flex-shrink-0">
-              {userType === "enterprise" ? "E" : "U"}
-            </div>
-            <div className="flex flex-col flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold truncate text-indigo-900">
-                  {userType === "enterprise" ? "Empresa" : "Perfil"}
-                </span>
-                {isAdmin() && (
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] px-1.5 py-0 bg-indigo-200 text-indigo-900"
-                  >
-                    Admin
-                  </Badge>
-                )}
+        <SidebarFooter className="border-t p-4">
+          <div className="space-y-2">
+            {/* Perfil do Usuário */}
+            {!isCollapsed ? (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-white flex-shrink-0">
+                  {userType === "enterprise" ? (
+                    <Building2 className="h-4 w-4" />
+                  ) : (
+                    <User className="h-4 w-4" />
+                  )}
+                </div>
+                <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-slate-900 truncate">
+                      {userType === "enterprise" ? "Empresa" : "Usuário"}
+                    </span>
+                    {isAdminUser && (
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] px-1.5 py-0 bg-indigo-100 text-indigo-700 border-0"
+                      >
+                        Admin
+                      </Badge>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-slate-500 truncate">
+                    {userDisplayName}
+                  </span>
+                </div>
               </div>
-              <span className="text-xs text-indigo-700/70 truncate font-medium">
-                {userDisplayName}
-              </span>
-            </div>
-          </div>
+            ) : (
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <div className="flex justify-center">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-white">
+                      {userType === "enterprise" ? (
+                        <Building2 className="h-4 w-4" />
+                      ) : (
+                        <User className="h-4 w-4" />
+                      )}
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <div className="text-center">
+                    <div className="font-medium">
+                      {userType === "enterprise" ? "Empresa" : "Usuário"}
+                    </div>
+                    <div className="text-xs opacity-80">{userDisplayName}</div>
+                    {isAdminUser && (
+                      <div className="text-xs mt-1 text-indigo-400">Admin</div>
+                    )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
-          {/* Botão de Logout */}
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-all group"
-          >
-            <LogOut className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
-            <span>Sair da conta</span>
-          </button>
-        </div>
-      </SidebarFooter>
-    </Sidebar>
+            {/* Botão Sair */}
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleLogout}
+                  className={`flex items-center gap-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors ${
+                    isCollapsed
+                      ? "w-10 h-10 justify-center"
+                      : "w-full px-3 py-2"
+                  }`}
+                >
+                  <LogOut className="h-4 w-4" />
+                  {!isCollapsed && <span>Sair</span>}
+                </button>
+              </TooltipTrigger>
+              {isCollapsed && (
+                <TooltipContent side="right">Sair</TooltipContent>
+              )}
+            </Tooltip>
+          </div>
+        </SidebarFooter>
+      </Sidebar>
+    </TooltipProvider>
   );
 }

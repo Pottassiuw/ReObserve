@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { loginApi, logoutApi } from "@/api/endpoints/auth";
 import { decodeJWT } from "@/utils/decoder";
-import { retornarUsuario } from "@/api/endpoints/users";
+import { setGlobalAuthToken, clearGlobalAuthToken } from "@/api/client";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -9,122 +9,132 @@ interface AuthState {
   userType: "user" | "enterprise" | null;
   admin: boolean;
   userId: number | null;
+  initialized: boolean;
   login: (
     type: "user" | "enterprise",
     credentials: { email?: string; cnpj?: string; senha: string },
   ) => Promise<void>;
   logout: (type: "user" | "enterprise") => Promise<void>;
-  checkAuth: () => void;
+  initialize: () => void;
 }
-
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   userType: null,
   admin: false,
   userId: null,
   isAuthLoading: true,
-
+  initialized: false,
   login: async (type, credentials) => {
     set({ isAuthLoading: true });
     try {
       const result = await loginApi(type, credentials);
 
-      if (!result.success) {
+      if (!result.success || !result.token) {
         throw new Error(result.error || "Erro ao fazer login");
       }
-
-      const isUser = !!result.user;
-
+      setGlobalAuthToken(result.token);
+      const decoded = decodeJWT(result.token);
+      const userId = decoded?.sub ? parseInt(decoded.sub, 10) : null;
+      const isAdmin =
+        decoded.admin === true ||
+        decoded.admin === "true" ||
+        result.user?.admin ||
+        false;
+      if (!userId) {
+        throw new Error("ID não encontrado no token");
+      }
       set({
         isAuthenticated: true,
-        userType: isUser ? "user" : "enterprise",
-        admin: result.user?.admin || false,
-        userId: result.user?.id || result.enterprise?.id || null,
+        userType: type,
+        admin: isAdmin,
+        userId: userId,
+        isAuthLoading: false,
+        initialized: true,
       });
     } catch (error) {
-      console.error("Erro no processo de login:", error);
+      console.error("❌ Erro no login:", error);
+      clearGlobalAuthToken();
       set({
         isAuthenticated: false,
         userType: null,
         admin: false,
         userId: null,
+        isAuthLoading: false,
+        initialized: true,
       });
       throw error;
-    } finally {
-      set({ isAuthLoading: false });
     }
   },
+
   logout: async (type) => {
-    await logoutApi(type);
-    set({ isAuthenticated: false, userType: null, admin: false, userId: null });
-  },
-  checkAuth: async () => {
-    set({ isAuthLoading: true });
     try {
-      const token = localStorage.getItem("auth-token");
+      await logoutApi(type);
+    } finally {
+      clearGlobalAuthToken();
+      set({
+        isAuthenticated: false,
+        userType: null,
+        admin: false,
+        userId: null,
+        initialized: true,
+      });
+    }
+  },
 
-      if (!token) {
-        set({
-          isAuthenticated: false,
-          userType: null,
-          admin: false,
-          userId: null,
-          isAuthLoading: false,
-        });
-        return;
-      }
+  initialize: () => {
+    const token = localStorage.getItem("auth-token");
+    if (!token) {
+      console.log("❌ Sem token");
+      set({
+        isAuthenticated: false,
+        userType: null,
+        admin: false,
+        userId: null,
+        isAuthLoading: false,
+        initialized: true,
+      });
+      return;
+    }
 
+    try {
       const decoded = decodeJWT(token);
       const userId = decoded?.sub ? parseInt(decoded.sub, 10) : null;
 
       if (!decoded || !decoded.type || !userId) {
-        console.log("❌ Token inválido:", { decoded, userId });
-        localStorage.removeItem("auth-token");
+        console.log("❌ Token inválido");
+        clearGlobalAuthToken();
         set({
           isAuthenticated: false,
           userType: null,
           admin: false,
           userId: null,
           isAuthLoading: false,
+          initialized: true,
         });
         return;
       }
-      let isAdmin = false;
-      if (decoded.type === "user") {
-        try {
-          const userData = await retornarUsuario(userId);
-          isAdmin = Boolean(userData?.admin);
-        } catch (error) {
-          console.error("Erro ao buscar dados do usuário:", error);
-          localStorage.removeItem("auth-token");
-          set({
-            isAuthenticated: false,
-            userType: null,
-            admin: false,
-            userId: null,
-            isAuthLoading: false,
-          });
-          return;
-        }
-      }
+
+      const isAdmin = decoded.admin === true || decoded.admin === "true";
+
       set({
         isAuthenticated: true,
         userType: decoded.type,
         admin: isAdmin,
         userId: userId,
         isAuthLoading: false,
+        initialized: true,
       });
     } catch (error) {
-      console.error("Erro no checkAuth:", error);
+      console.error("❌ Erro ao inicializar:", error);
+      clearGlobalAuthToken();
       set({
         isAuthenticated: false,
         userType: null,
         admin: false,
         userId: null,
         isAuthLoading: false,
+        initialized: true,
       });
     }
   },
 }));
-
-useAuthStore.getState().checkAuth();

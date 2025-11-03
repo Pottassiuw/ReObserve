@@ -69,7 +69,6 @@ const ReleaseModal = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   // Carregar dados do lançamento
   useEffect(() => {
     if (release) {

@@ -29,6 +29,7 @@ import {
   Shield,
   ArrowLeft,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
@@ -44,7 +45,16 @@ export default function CreateUserPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { userType, userId } = useAuthStore();
   const navigate = useNavigate();
-  const { grupos, isLoading: loadingGroups, error: groupsError } = useGroups();
+
+  // Passa o empresaId para o hook
+  const {
+    grupos,
+    isLoading: loadingGroups,
+    error: groupsError,
+  } = useGroups({
+    empresaId: userId || undefined,
+    autoLoad: true,
+  });
 
   const formSchema = criarUsuarioSchema
     .extend({
@@ -54,6 +64,7 @@ export default function CreateUserPage() {
       message: "As senhas não coincidem",
       path: ["confirmSenha"],
     });
+
   type FormData = z.infer<typeof formSchema>;
 
   const {
@@ -66,19 +77,10 @@ export default function CreateUserPage() {
     resolver: zodResolver(formSchema),
   });
 
-  // Log dos erros para debug
-  useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      console.log("❌ Erros do formulário:", errors);
-    }
-  }, [errors]);
-
   const selectedGrupoId = watch("grupoId");
-
-  // Encontrar o grupo selecionado
   const selectedGroup = grupos.find((g) => g.id === selectedGrupoId);
 
-  // Verificar se o usuário é uma empresa
+  // Verifica se o usuário é uma empresa
   useEffect(() => {
     if (userType !== "enterprise") {
       toast.error("Acesso negado", {
@@ -88,8 +90,15 @@ export default function CreateUserPage() {
     }
   }, [userType, navigate]);
 
+  // Debug grupos carregados
+  useEffect(() => {
+    console.log("Grupos carregados:", grupos);
+    console.log("Loading:", loadingGroups);
+    console.log("Error:", groupsError);
+    console.log("UserId:", userId);
+  }, [grupos, loadingGroups, groupsError, userId]);
+
   const onSubmit = async (data: criarUsuarioInput) => {
-    console.log("🎯 onSubmit chamado com dados:", data);
     setIsLoading(true);
     const loadingToastId = toast.loading("Criando usuário...");
 
@@ -103,7 +112,6 @@ export default function CreateUserPage() {
         grupoId: data.grupoId,
       };
 
-      console.log("📦 Payload enviado:", payload);
       await criarUsuario(payload);
       toast.success("Usuário criado com sucesso!", {
         id: loadingToastId,
@@ -111,9 +119,8 @@ export default function CreateUserPage() {
         duration: 3000,
       });
 
-      // Redirecionar após sucesso
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/users/view");
       }, 1500);
     } catch (error: any) {
       toast.error("Erro ao criar usuário", {
@@ -132,18 +139,22 @@ export default function CreateUserPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
+        <div className="mb-6 md:mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="mb-4 hover:bg-indigo-50"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
             Criar Novo Usuário
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-sm md:text-base text-gray-600 mt-2">
             Adicione um novo usuário à sua empresa com permissões específicas
           </p>
         </div>
@@ -151,18 +162,21 @@ export default function CreateUserPage() {
         {/* Erro ao carregar grupos */}
         {groupsError && (
           <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
             <AlertDescription>{groupsError}</AlertDescription>
           </Alert>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações do Usuário</CardTitle>
+        <Card className="shadow-lg border-0">
+          <CardHeader className="border-b bg-gradient-to-r from-indigo-50 to-purple-50">
+            <CardTitle className="text-indigo-900">
+              Informações do Usuário
+            </CardTitle>
             <CardDescription>
               Preencha todos os campos para criar um novo usuário
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Nome Completo */}
               <div className="space-y-2">
@@ -185,7 +199,6 @@ export default function CreateUserPage() {
 
               {/* Email e CPF */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Email */}
                 <div className="space-y-2">
                   <Label htmlFor="email">E-mail *</Label>
                   <div className="relative">
@@ -207,7 +220,6 @@ export default function CreateUserPage() {
                   )}
                 </div>
 
-                {/* CPF */}
                 <div className="space-y-2">
                   <Label htmlFor="cpf">CPF *</Label>
                   <Input
@@ -228,7 +240,6 @@ export default function CreateUserPage() {
 
               {/* Senha e Confirmar Senha */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Senha */}
                 <div className="space-y-2">
                   <Label htmlFor="senha">Senha *</Label>
                   <div className="relative">
@@ -263,7 +274,6 @@ export default function CreateUserPage() {
                   )}
                 </div>
 
-                {/* Confirmar Senha */}
                 <div className="space-y-2">
                   <Label htmlFor="confirmarSenha">Confirmar Senha *</Label>
                   <div className="relative">
@@ -305,17 +315,24 @@ export default function CreateUserPage() {
               <div className="space-y-2">
                 <Label htmlFor="grupo">Grupo de Permissões *</Label>
                 {loadingGroups ? (
-                  <div className="flex items-center justify-center py-4">
+                  <div className="flex items-center justify-center py-8 border rounded-lg bg-indigo-50/50">
                     <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
-                    <span className="ml-2 text-sm text-gray-500">
+                    <span className="ml-2 text-sm text-gray-600">
                       Carregando grupos...
                     </span>
                   </div>
                 ) : grupos.length === 0 ? (
-                  <Alert variant="destructive">
-                    <AlertDescription>
-                      Nenhum grupo encontrado. Por favor, crie grupos antes de
-                      adicionar usuários.
+                  <Alert className="border-amber-200 bg-amber-50">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-900">
+                      Nenhum grupo encontrado.
+                      <Button
+                        variant="link"
+                        onClick={() => navigate("/groups")}
+                        className="p-0 h-auto ml-1 text-indigo-600"
+                      >
+                        Criar grupo primeiro
+                      </Button>
                     </AlertDescription>
                   </Alert>
                 ) : (
@@ -336,7 +353,7 @@ export default function CreateUserPage() {
                           <div className="flex flex-col">
                             <span className="font-medium">{grupo.nome}</span>
                             <span className="text-xs text-gray-500">
-                              ID: {grupo.id}
+                              {grupo.permissoes?.length || 0} permissões
                             </span>
                           </div>
                         </SelectItem>
@@ -358,15 +375,11 @@ export default function CreateUserPage() {
                   <AlertDescription className="text-indigo-900">
                     <div className="space-y-2">
                       <div>
-                        <strong>Grupo selecionado:</strong> {selectedGroup.nome}
+                        <strong>Grupo:</strong> {selectedGroup.nome}
                       </div>
                       <div className="text-sm">
-                        <strong>Permissões:</strong>
-                        <div className="mt-1 p-2 bg-white rounded border border-indigo-200">
-                          <code className="text-xs">
-                            {selectedGroup.permissoes}
-                          </code>
-                        </div>
+                        <strong>Permissões:</strong>{" "}
+                        {selectedGroup.permissoes?.length || 0}
                       </div>
                     </div>
                   </AlertDescription>
@@ -374,19 +387,19 @@ export default function CreateUserPage() {
               )}
 
               {/* Botões */}
-              <div className="flex gap-4 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => navigate(-1)}
-                  className="flex-1"
+                  className="flex-1 order-2 sm:order-1"
                   disabled={isLoading}
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                  className="flex-1 order-1 sm:order-2 bg-indigo-600 hover:bg-indigo-700"
                   disabled={isLoading || loadingGroups || grupos.length === 0}
                 >
                   {isLoading ? (

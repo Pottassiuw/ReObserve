@@ -1,114 +1,57 @@
 import { createBrowserRouter } from "react-router-dom";
-import { lazy, Suspense } from "react";
 import App from "@/App";
 import DashboardLayout from "@/layout/dashboardLayout";
 import ProtectedRoute from "./protectedRoutes";
-import { Loader2 } from "lucide-react";
+import Home from "@/pages/home";
+import UserLogin from "@/pages/user/user.login";
+import EnterpriseLogin from "@/pages/enterprise/enterprise.login";
+import EnterpriseRegister from "@/pages/enterprise/enterprise.register";
+import Dashboard from "@/pages/dashboard";
+import ReleasesPage from "@/pages/releasesPage";
+import PeriodsPage from "@/pages/periodsPage";
+import UserSettingsPage from "@/pages/user/user.config";
+import CreateUserPage from "@/pages/user/user.register";
+import UserView from "@/pages/user/user.view";
+import EnterpriseGroups from "@/pages/enterprise/enterprise.groups";
+import AuthError from "@/components/authError";
+import NotFound from "@/components/notFound";
+import { usePermissionsStore } from "@/stores/permissionsStore";
+import { useAuthStore } from "@/stores/authStore";
+import type { JSX } from "react";
 
-const Home = lazy(() => import("@/pages/home"));
-const UserLogin = lazy(() => import("@/pages/user/user.login"));
-const EnterpriseLogin = lazy(
-  () => import("@/pages/enterprise/enterprise.login"),
-);
-const EnterpriseRegister = lazy(
-  () => import("@/pages/enterprise/enterprise.register"),
-);
-const Dashboard = lazy(() => import("@/pages/dashboard"));
-const ReleasesPage = lazy(() => import("@/pages/releasesPage"));
-const PeriodsPage = lazy(() => import("@/pages/periodsPage"));
-const UserSettingsPage = lazy(() => import("@/pages/user/user.config"));
-const CreateUserPage = lazy(() => import("@/pages/user/user.register"));
-const UserView = lazy(() => import("@/pages/user/user.view"));
-const EnterpriseGroups = lazy(
-  () => import("@/pages/enterprise/enterprise.groups"),
-);
-const PageNotFound = lazy(() => import("@/pages/notFound"));
-
-const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50/30">
-    <div className="flex flex-col items-center gap-4">
-      <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-      <p className="text-sm text-gray-600">Carregando...</p>
-    </div>
-  </div>
-);
-
-const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
-  <Suspense fallback={<PageLoader />}>{children}</Suspense>
-);
-
-const publicRoutes = [
-  {
-    path: "/",
-    element: <Home />,
-  },
-  {
-    path: "/user/login",
-    element: <UserLogin />,
-  },
-  {
-    path: "/enterprise/login",
-    element: <EnterpriseLogin />,
-  },
-  {
-    path: "/enterprise/register",
-    element: <EnterpriseRegister />,
-  },
-];
-
-const protectedRoutes = [
-  {
-    path: "/dashboard",
-    element: <Dashboard />,
-    name: "Dashboard",
-  },
-  {
-    path: "/releases",
-    element: <ReleasesPage />,
-    name: "Lançamentos",
-  },
-  {
-    path: "/periods",
-    element: <PeriodsPage />,
-    name: "Períodos",
-  },
-  {
-    path: "/user/settings",
-    element: <UserSettingsPage />,
-    name: "Configurações",
-  },
-  {
-    path: "/user/create",
-    element: <CreateUserPage />,
-    name: "Criar Usuário",
-  },
-  {
-    path: "/users/view",
-    element: <UserView />,
-    name: "Gerenciar Usuários",
-  },
-  {
-    path: "/groups",
-    element: <EnterpriseGroups />,
-    name: "Grupos",
-  },
-];
+// Helper para criar route com proteção
+const createProtectedRoute = (
+  element: JSX.Element,
+  options?: {
+    requirePermission?: () => boolean;
+    requireEnterprise?: boolean;
+    requireAdmin?: boolean;
+  }
+) => {
+  return (
+    <ProtectedRoute
+      requirePermission={options?.requirePermission}
+      requireEnterprise={options?.requireEnterprise}
+      requireAdmin={options?.requireAdmin}
+    >
+      {element}
+    </ProtectedRoute>
+  );
+};
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
-    errorElement: (
-      <SuspenseWrapper>
-        <PageNotFound />
-      </SuspenseWrapper>
-    ),
+    errorElement: <AuthError />,
     children: [
-      ...publicRoutes.map((route) => ({
-        ...route,
-        element: <SuspenseWrapper>{route.element}</SuspenseWrapper>,
-      })),
+      // públicas
+      { index: true, element: <Home /> },
+      { path: "user/login", element: <UserLogin /> },
+      { path: "enterprise/login", element: <EnterpriseLogin /> },
+      { path: "enterprise/register", element: <EnterpriseRegister /> },
 
+      // protegidas
       {
         element: (
           <ProtectedRoute>
@@ -116,43 +59,73 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         children: [
-          {
-            index: true,
-            path: "/dashboard",
-            element: (
-              <SuspenseWrapper>
-                <Dashboard />
-              </SuspenseWrapper>
-            ),
+          { 
+            index: true, 
+            element: createProtectedRoute(<Dashboard />, {
+              requirePermission: () => {
+                const { userType } = useAuthStore.getState();
+                const { isAdmin } = usePermissionsStore.getState();
+                return userType === "enterprise" || isAdmin();
+              }
+            })
           },
-          ...protectedRoutes
-            .filter((route) => route.path !== "/dashboard")
-            .map((route) => ({
-              ...route,
-              element: <SuspenseWrapper>{route.element}</SuspenseWrapper>,
-            })),
+          { 
+            path: "dashboard", 
+            element: createProtectedRoute(<Dashboard />, {
+              requirePermission: () => {
+                const { userType } = useAuthStore.getState();
+                const { isAdmin } = usePermissionsStore.getState();
+                return userType === "enterprise" || isAdmin();
+              }
+            })
+          },
+          { 
+            path: "releases", 
+            element: createProtectedRoute(<ReleasesPage />, {
+              requirePermission: () => {
+                const { canViewRelease } = usePermissionsStore.getState();
+                return canViewRelease();
+              }
+            })
+          },
+          { 
+            path: "periods", 
+            element: createProtectedRoute(<PeriodsPage />, {
+              requirePermission: () => {
+                const { canViewPeriod } = usePermissionsStore.getState();
+                return canViewPeriod();
+              }
+            })
+          },
+          { 
+            path: "user/settings", 
+            element: createProtectedRoute(<UserSettingsPage />)
+          },
+          { 
+            path: "user/create", 
+            element: createProtectedRoute(<CreateUserPage />, {
+              requireEnterprise: true
+            })
+          },
+          { 
+            path: "users/view", 
+            element: createProtectedRoute(<UserView />, {
+              requirePermission: () => {
+                const { userType } = useAuthStore.getState();
+                const { isAdmin } = usePermissionsStore.getState();
+                return userType === "enterprise" || isAdmin();
+              }
+            })
+          },
+          { 
+            path: "groups", 
+            element: createProtectedRoute(<EnterpriseGroups />, {
+              requireEnterprise: true
+            })
+          },
         ],
       },
-
-      {
-        path: "*",
-        element: (
-          <SuspenseWrapper>
-            <PageNotFound />
-          </SuspenseWrapper>
-        ),
-      },
+      { path: "*", element: <NotFound /> },
     ],
   },
 ]);
-export const getRouteConfig = () => ({
-  public: publicRoutes,
-  protected: protectedRoutes,
-});
-export const isValidRoute = (path: string): boolean => {
-  const allPaths = [
-    ...publicRoutes.map((r) => r.path),
-    ...protectedRoutes.map((r) => r.path),
-  ];
-  return allPaths.includes(path);
-};
