@@ -141,9 +141,11 @@ export const useReleasesManagement = () => {
       setError(null);
 
       try {
+        const empresaId = getEmpresaId();
         const updated = await atualizarLancamento(
           id,
-          data as CriarLancamentoDTO,
+          empresaId,
+          data as Partial<CriarLancamentoDTO>,
         );
         updateRelease(id, updated);
         return updated;
@@ -157,7 +159,7 @@ export const useReleasesManagement = () => {
         setLoading(false);
       }
     },
-    [canEditRelease, updateRelease, setLoading, setError],
+    [canEditRelease, getEmpresaId, updateRelease, setLoading, setError],
   );
 
   const deleteRelease = useCallback(

@@ -41,7 +41,7 @@ import {
 export default function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { state } = useSidebar();
+  const { state, setOpen, isMobile } = useSidebar();
 
   const { userType, logout, userId } = useAuthStore();
   const {
@@ -58,10 +58,8 @@ export default function AppSidebar() {
   useEffect(() => {
     if (permissionsLoaded) {
       console.log("Permissões carregadas:", permissions);
-      console.log("Can view release:", canViewRelease());
-      console.log("Can view period:", canViewPeriod());
     }
-  }, [permissionsLoaded, permissions, canViewRelease, canViewPeriod]);
+  }, [permissionsLoaded, permissions]);
 
   if (!permissionsLoaded || !userId) {
     return null;
@@ -124,7 +122,7 @@ export default function AppSidebar() {
       id: "settings",
       label: "Configurações",
       icon: Settings,
-      path: "/user/settings",
+      path: userType === "enterprise" ? "/enterprise/settings" : "/user/settings",
       show: true,
       group: "main",
     },
@@ -133,8 +131,12 @@ export default function AppSidebar() {
   const handleNavigation = useCallback(
     (path: string) => {
       navigate(path);
+      // Fecha sidebar em mobile após navegação
+      if (isMobile) {
+        setOpen(false);
+      }
     },
-    [navigate],
+    [navigate, isMobile, setOpen],
   );
 
   const handleLogout = useCallback(async () => {
@@ -176,18 +178,23 @@ export default function AppSidebar() {
 
     const button = (
       <SidebarMenuButton
-        className={`group cursor-pointer relative transition-colors duration-150
-          ${isCollapsed ? "w-10 h-10 justify-center" : "w-full justify-start"}
+        className={`group cursor-pointer relative transition-all duration-200
+          ${isCollapsed 
+            ? "w-10 h-10 justify-center rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50" 
+            : "w-full justify-start rounded-lg"
+          }
           ${
             isActive
-              ? "bg-indigo-50 text-indigo-900 font-medium"
-              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              ? "bg-indigo-100 border-indigo-200 text-indigo-900 font-medium shadow-sm"
+              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent"
           }`}
         onClick={() => handleNavigation(item.path)}
         isActive={isActive}
       >
         <item.icon
-          className={`h-5 w-5 ${isActive ? "text-indigo-600" : "text-slate-500"}`}
+          className={`h-5 w-5 transition-colors ${
+            isActive ? "text-indigo-600" : "text-slate-500 group-hover:text-slate-700"
+          }`}
         />
         {!isCollapsed && <span className="text-sm ml-3">{item.label}</span>}
         {!isCollapsed && isActive && (
@@ -214,11 +221,11 @@ export default function AppSidebar() {
     <TooltipProvider>
       <Sidebar 
         collapsible="icon" 
-        className="border-r bg-white h-screen sticky top-0"
+        className="border-r bg-white h-screen"
       >
-        <SidebarHeader className="border-b px-6 py-4">
+        <SidebarHeader className="border-b px-6 py-4 bg-slate-50/50">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 shadow-sm flex-shrink-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-700 shadow-md flex-shrink-0">
               <span className="text-white text-xl font-bold">R</span>
             </div>
             {!isCollapsed && (
@@ -238,7 +245,7 @@ export default function AppSidebar() {
           {/* Menu Principal */}
           <SidebarGroup>
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
+              <SidebarMenu className={isCollapsed ? "space-y-2" : "space-y-1"}>
                 {getGroupItems("main").map((item) => (
                   <SidebarMenuItem key={item.id}>
                     {renderMenuButton(item)}
@@ -256,8 +263,9 @@ export default function AppSidebar() {
                   Gerenciamento
                 </SidebarGroupLabel>
               )}
+              {isCollapsed && <div className="h-px bg-slate-200 mx-2 mb-2" />}
               <SidebarGroupContent>
-                <SidebarMenu className="space-y-1">
+                <SidebarMenu className={isCollapsed ? "space-y-2" : "space-y-1"}>
                   {getGroupItems("management").map((item) => (
                     <SidebarMenuItem key={item.id}>
                       {renderMenuButton(item)}
@@ -276,8 +284,9 @@ export default function AppSidebar() {
                   Usuários
                 </SidebarGroupLabel>
               )}
+              {isCollapsed && <div className="h-px bg-slate-200 mx-2 mb-2" />}
               <SidebarGroupContent>
-                <SidebarMenu className="space-y-1">
+                <SidebarMenu className={isCollapsed ? "space-y-2" : "space-y-1"}>
                   {getGroupItems("users").map((item) => (
                     <SidebarMenuItem key={item.id}>
                       {renderMenuButton(item)}
@@ -289,16 +298,16 @@ export default function AppSidebar() {
           )}
         </SidebarContent>
 
-        <SidebarFooter className="border-t p-4">
+        <SidebarFooter className="border-t p-4 bg-slate-50/50">
           <div className="space-y-2">
             {/* Perfil do Usuário */}
             {!isCollapsed ? (
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-white flex-shrink-0">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-white border border-slate-200 shadow-sm">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-indigo-700 text-white flex-shrink-0 shadow-sm">
                   {userType === "enterprise" ? (
-                    <Building2 className="h-4 w-4" />
+                    <Building2 className="h-5 w-5" />
                   ) : (
-                    <User className="h-4 w-4" />
+                    <User className="h-5 w-5" />
                   )}
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">
@@ -324,11 +333,11 @@ export default function AppSidebar() {
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <div className="flex justify-center">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-white">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-indigo-700 text-white border-2 border-slate-200 shadow-sm">
                       {userType === "enterprise" ? (
-                        <Building2 className="h-4 w-4" />
+                        <Building2 className="h-5 w-5" />
                       ) : (
-                        <User className="h-4 w-4" />
+                        <User className="h-5 w-5" />
                       )}
                     </div>
                   </div>
@@ -352,7 +361,7 @@ export default function AppSidebar() {
               <TooltipTrigger asChild>
                 <button
                   onClick={handleLogout}
-                  className={`flex items-center gap-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors ${
+                  className={`flex items-center gap-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-all border border-transparent hover:border-red-200 ${
                     isCollapsed
                       ? "w-10 h-10 justify-center"
                       : "w-full px-3 py-2"

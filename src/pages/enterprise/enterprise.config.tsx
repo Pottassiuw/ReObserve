@@ -9,41 +9,42 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  User,
+  Building2,
   Shield,
   Key,
-  Mail,
   Save,
   CheckCircle,
   AlertCircle,
   Eye,
   EyeOff,
   Loader2,
+  MapPin,
+  FileText,
+  Briefcase,
 } from "lucide-react";
-import { useUserStore } from "@/stores/userStore";
+import { useEnterpriseStore } from "@/stores/enterpriseStore";
 import { useAuthStore } from "@/stores/authStore";
-import { atualizarUsuario } from "@/api/endpoints/users";
+import { atualizarEmpresa } from "@/api/endpoints/stores";
 import { toast } from "sonner";
-import { Navigate } from "react-router-dom";
 
-export default function SettingsPage() {
+export default function EnterpriseSettingsPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const {
-    user,
-    isLoading: userLoading,
-    error: userError,
-    retornarUsuario,
-  } = useUserStore();
-  const { userId, userType } = useAuthStore();
+  const { enterprise, getEnterprise } = useEnterpriseStore();
+  const { userId } = useAuthStore();
 
-  const [userData, setUserData] = useState({
-    name: "",
-    email: "",
+  const [enterpriseData, setEnterpriseData] = useState({
+    razaoSocial: "",
+    nomeFantasia: "",
+    endereco: "",
+    situacaoCadastral: "",
+    naturezaJuridica: "",
+    CNAES: "",
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -52,50 +53,38 @@ export default function SettingsPage() {
     confirmPassword: "",
   });
 
-  const currentUser = Array.isArray(user) ? user[0] : user;
-
-  // Redirecionar empresas para a página de configuração delas
-  if (userType === "enterprise") {
-    return <Navigate to="/enterprise/settings" replace />;
-  }
-
   useEffect(() => {
     if (userId) {
-      console.log("📞 Chamando retornarUsuario com ID:", userId);
-      retornarUsuario(userId);
+      getEnterprise(userId);
     }
-  }, [userId, retornarUsuario]);
-
+  }, [userId, getEnterprise]);
 
   useEffect(() => {
-    if (currentUser) {
-      console.log("✏️ Atualizando userData com:", {
-        nome: currentUser.nome,
-        email: currentUser.email,
-      });
-      setUserData({
-        name: currentUser.nome || "",
-        email: currentUser.email || "",
+    if (enterprise) {
+      setEnterpriseData({
+        razaoSocial: enterprise.razaoSocial || "",
+        nomeFantasia: enterprise.nomeFantasia || "",
+        endereco: enterprise.endereco || "",
+        situacaoCadastral: enterprise.situacaoCadastral || "",
+        naturezaJuridica: enterprise.naturezaJuridica || "",
+        CNAES: enterprise.CNAES || "",
       });
     }
-  }, [user]);
+  }, [enterprise]);
 
-  const handleSaveUserData = async () => {
-    if (!userId || !currentUser) return;
+  const handleSaveEnterpriseData = async () => {
+    if (!userId || !enterprise) return;
 
     setIsSaving(true);
     try {
-      await atualizarUsuario(userId, {
-        nome: userData.name,
-        email: userData.email,
-      });
-      toast.success("Dados atualizados com sucesso!");
+      await atualizarEmpresa(userId, enterpriseData);
+      toast.success("Dados da empresa atualizados com sucesso!");
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       // Recarregar dados
-      await retornarUsuario(userId);
+      await getEnterprise(userId);
     } catch (error: any) {
-      toast.error(error.message || "Erro ao atualizar dados");
+      toast.error(error.message || "Erro ao atualizar dados da empresa");
     } finally {
       setIsSaving(false);
     }
@@ -104,8 +93,6 @@ export default function SettingsPage() {
   const handleSavePassword = async () => {
     if (!userId) return;
 
-    // Aqui você pode adicionar validação da senha atual se necessário
-    // Por enquanto, apenas atualiza a senha
     if (!passwordData.newPassword || !passwordData.confirmPassword) {
       toast.error("Preencha todos os campos de senha");
       return;
@@ -116,9 +103,14 @@ export default function SettingsPage() {
       return;
     }
 
+    if (passwordData.newPassword.length < 8) {
+      toast.error("A senha deve ter pelo menos 8 caracteres");
+      return;
+    }
+
     setIsSaving(true);
     try {
-      await atualizarUsuario(userId, { senha: passwordData.newPassword });
+      await atualizarEmpresa(userId, { senha: passwordData.newPassword });
       toast.success("Senha alterada com sucesso!");
       setPasswordData({
         currentPassword: "",
@@ -134,7 +126,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (userLoading) {
+  if (!enterprise) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-6 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -145,43 +137,15 @@ export default function SettingsPage() {
     );
   }
 
-  if (userError) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-6">
-        <div className="max-w-4xl mx-auto">
-          <Alert className="bg-red-50 border-red-200">
-            <AlertCircle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
-              {userError}
-            </AlertDescription>
-          </Alert>
-        </div>
-      </div>
-    );
-  }
-
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-6">
-        <div className="max-w-4xl mx-auto">
-          <Alert className="bg-amber-50 border-amber-200">
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-800">
-              Nenhum usuário encontrado.
-            </AlertDescription>
-          </Alert>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-4 md:p-6">
+      <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold text-indigo-900">Configurações</h1>
-          <p className="text-muted-foreground">
-            Gerencie suas informações pessoais e de segurança
+          <h1 className="text-2xl md:text-3xl font-bold text-indigo-900">
+            Configurações da Empresa
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Gerencie as informações e configurações da sua empresa
           </p>
         </div>
 
@@ -197,70 +161,152 @@ export default function SettingsPage() {
         <Card className="border-0 shadow-md">
           <CardHeader>
             <CardTitle className="text-indigo-900 flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Meus Dados
+              <Building2 className="h-5 w-5" />
+              Dados da Empresa
             </CardTitle>
             <CardDescription>
-              Atualize suas informações pessoais
+              Atualize as informações cadastrais da sua empresa
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="name" className="text-indigo-900">
-                  Nome Completo
+                <Label htmlFor="razaoSocial" className="text-indigo-900">
+                  Razão Social *
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-indigo-400" />
+                  <FileText className="absolute left-3 top-3 h-4 w-4 text-indigo-400" />
                   <Input
-                    id="name"
-                    value={userData.name}
+                    id="razaoSocial"
+                    value={enterpriseData.razaoSocial}
                     onChange={(e) =>
-                      setUserData({ ...userData, name: e.target.value })
+                      setEnterpriseData({
+                        ...enterpriseData,
+                        razaoSocial: e.target.value,
+                      })
                     }
                     className="pl-10 border-indigo-100 focus:border-indigo-300"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="email" className="text-indigo-900">
-                  E-mail
+              <div className="space-y-2">
+                <Label htmlFor="nomeFantasia" className="text-indigo-900">
+                  Nome Fantasia
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-indigo-400" />
+                  <Building2 className="absolute left-3 top-3 h-4 w-4 text-indigo-400" />
                   <Input
-                    id="email"
-                    type="email"
-                    value={userData.email}
+                    id="nomeFantasia"
+                    value={enterpriseData.nomeFantasia}
                     onChange={(e) =>
-                      setUserData({ ...userData, email: e.target.value })
+                      setEnterpriseData({
+                        ...enterpriseData,
+                        nomeFantasia: e.target.value,
+                      })
                     }
                     className="pl-10 border-indigo-100 focus:border-indigo-300"
                   />
                 </div>
               </div>
 
-              {currentUser.cpf && (
-                <div className="space-y-2">
-                  <Label className="text-indigo-900">CPF</Label>
+              <div className="space-y-2">
+                <Label className="text-indigo-900">CNPJ</Label>
+                <Input
+                  value={enterprise.cnpj || ""}
+                  disabled
+                  className="bg-white/50 border-indigo-100 text-indigo-900"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="endereco" className="text-indigo-900">
+                  Endereço *
+                </Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-indigo-400" />
                   <Input
-                    value={currentUser.cpf}
-                    disabled
-                    className="bg-white/50 border-indigo-100 text-indigo-900"
+                    id="endereco"
+                    value={enterpriseData.endereco}
+                    onChange={(e) =>
+                      setEnterpriseData({
+                        ...enterpriseData,
+                        endereco: e.target.value,
+                      })
+                    }
+                    className="pl-10 border-indigo-100 focus:border-indigo-300"
                   />
                 </div>
-              )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="situacaoCadastral" className="text-indigo-900">
+                  Situação Cadastral *
+                </Label>
+                <Input
+                  id="situacaoCadastral"
+                  value={enterpriseData.situacaoCadastral}
+                  onChange={(e) =>
+                    setEnterpriseData({
+                      ...enterpriseData,
+                      situacaoCadastral: e.target.value,
+                    })
+                  }
+                  className="border-indigo-100 focus:border-indigo-300"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="naturezaJuridica" className="text-indigo-900">
+                  Natureza Jurídica *
+                </Label>
+                <Input
+                  id="naturezaJuridica"
+                  value={enterpriseData.naturezaJuridica}
+                  onChange={(e) =>
+                    setEnterpriseData({
+                      ...enterpriseData,
+                      naturezaJuridica: e.target.value,
+                    })
+                  }
+                  className="border-indigo-100 focus:border-indigo-300"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="CNAES" className="text-indigo-900">
+                  CNAES *
+                </Label>
+                <div className="relative">
+                  <Briefcase className="absolute left-3 top-3 h-4 w-4 text-indigo-400" />
+                  <Textarea
+                    id="CNAES"
+                    value={enterpriseData.CNAES}
+                    onChange={(e) =>
+                      setEnterpriseData({
+                        ...enterpriseData,
+                        CNAES: e.target.value,
+                      })
+                    }
+                    className="pl-10 border-indigo-100 focus:border-indigo-300 min-h-[100px]"
+                    placeholder="Digite os códigos CNAES"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3">
               <Button
                 variant="outline"
                 onClick={() => {
-                  if (currentUser) {
-                    setUserData({
-                      name: currentUser.nome || "",
-                      email: currentUser.email || "",
+                  if (enterprise) {
+                    setEnterpriseData({
+                      razaoSocial: enterprise.razaoSocial || "",
+                      nomeFantasia: enterprise.nomeFantasia || "",
+                      endereco: enterprise.endereco || "",
+                      situacaoCadastral: enterprise.situacaoCadastral || "",
+                      naturezaJuridica: enterprise.naturezaJuridica || "",
+                      CNAES: enterprise.CNAES || "",
                     });
                   }
                 }}
@@ -270,7 +316,7 @@ export default function SettingsPage() {
                 Cancelar
               </Button>
               <Button
-                onClick={handleSaveUserData}
+                onClick={handleSaveEnterpriseData}
                 className="bg-indigo-600 hover:bg-indigo-700"
                 disabled={isSaving}
               >
@@ -296,51 +342,18 @@ export default function SettingsPage() {
               <Shield className="h-5 w-5" />
               Segurança
             </CardTitle>
-            <CardDescription>Altere sua senha de acesso</CardDescription>
+            <CardDescription>Altere a senha de acesso da empresa</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <Alert className="bg-amber-50 border-amber-200">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-800">
                 Use uma senha forte com pelo menos 8 caracteres, incluindo
-                letras e números.
+                letras maiúsculas, minúsculas e números.
               </AlertDescription>
             </Alert>
 
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="current-password" className="text-indigo-900">
-                  Senha Atual
-                </Label>
-                <div className="relative">
-                  <Key className="absolute left-3 top-3 h-4 w-4 text-indigo-400" />
-                  <Input
-                    id="current-password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Digite sua senha atual"
-                    value={passwordData.currentPassword}
-                    onChange={(e) =>
-                      setPasswordData({
-                        ...passwordData,
-                        currentPassword: e.target.value,
-                      })
-                    }
-                    className="pl-10 pr-10 border-indigo-100 focus:border-indigo-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-indigo-400 hover:text-indigo-600"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="new-password" className="text-indigo-900">
                   Nova Senha
@@ -358,8 +371,19 @@ export default function SettingsPage() {
                         newPassword: e.target.value,
                       })
                     }
-                    className="pl-10 border-indigo-100 focus:border-indigo-300"
+                    className="pl-10 pr-10 border-indigo-100 focus:border-indigo-300"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-indigo-400 hover:text-indigo-600"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -421,8 +445,8 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
-
       </div>
     </div>
   );
 }
+

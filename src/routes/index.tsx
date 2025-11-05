@@ -10,6 +10,7 @@ import Dashboard from "@/pages/dashboard";
 import ReleasesPage from "@/pages/releasesPage";
 import PeriodsPage from "@/pages/periodsPage";
 import UserSettingsPage from "@/pages/user/user.config";
+import EnterpriseSettingsPage from "@/pages/enterprise/enterprise.config";
 import CreateUserPage from "@/pages/user/user.register";
 import UserView from "@/pages/user/user.view";
 import EnterpriseGroups from "@/pages/enterprise/enterprise.groups";
@@ -99,7 +100,18 @@ export const router = createBrowserRouter([
           },
           { 
             path: "user/settings", 
-            element: createProtectedRoute(<UserSettingsPage />)
+            element: createProtectedRoute(<UserSettingsPage />, {
+              requirePermission: () => {
+                const { userType } = useAuthStore.getState();
+                return userType === "user";
+              }
+            })
+          },
+          { 
+            path: "enterprise/settings", 
+            element: createProtectedRoute(<EnterpriseSettingsPage />, {
+              requireEnterprise: true
+            })
           },
           { 
             path: "user/create", 

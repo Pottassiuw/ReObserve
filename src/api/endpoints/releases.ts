@@ -35,28 +35,72 @@ export const retornarLancamento = async (id: number): Promise<Lancamento> => {
 
 export const atualizarLancamento = async (
   id: number,
-  data: CriarLancamentoDTO,
+  empresaId: number,
+  data: Partial<CriarLancamentoDTO>,
 ): Promise<Lancamento> => {
-  const imagensUrls = await uploadImagens(data.imagensUrls as any);
+  try {
+    if (!id || !empresaId) {
+      throw new Error("ID do lançamento e da empresa são obrigatórios");
+    }
 
-  const payload: CriarLancamentoBackendPayload = {
-    notaFiscal: {
-      numero: data.numeroNotaFiscal,
-      valor: data.valor,
-      dataEmissao: data.dataEmissao.toISOString(),
-      xmlPath: data.xmlPath,
-    },
-    data_lancamento: data.data_lancamento.toISOString(),
-    latitude: data.latitude,
-    longitude: data.longitude,
-    periodoId: data.periodoId,
-    imagensUrls,
-    usuarioId: data.usuarioId,
-    empresaId: data.empresaId,
-  };
+    const payload: any = {};
 
-  const response = await Client.put(`/releases/${id}`, payload);
-  return response.data?.data || response.data;
+    // Construir objeto notaFiscal se houver dados relacionados
+    if (data.valor !== undefined || data.dataEmissao || data.xmlPath !== undefined || data.numeroNotaFiscal) {
+      payload.notaFiscal = {};
+      if (data.valor !== undefined) {
+        payload.notaFiscal.valor = data.valor;
+      }
+      if (data.dataEmissao) {
+        payload.notaFiscal.dataEmissao = data.dataEmissao.toISOString();
+      }
+      if (data.xmlPath !== undefined) {
+        payload.notaFiscal.xmlPath = data.xmlPath;
+      }
+      // Nota: numero não pode ser alterado normalmente, mas incluímos se fornecido
+      if (data.numeroNotaFiscal) {
+        payload.notaFiscal.numero = data.numeroNotaFiscal;
+      }
+    }
+
+    if (data.data_lancamento) {
+      payload.data_lancamento = data.data_lancamento.toISOString();
+    }
+
+    if (data.latitude !== undefined) {
+      payload.latitude = data.latitude;
+    }
+
+    if (data.longitude !== undefined) {
+      payload.longitude = data.longitude;
+    }
+
+    if (data.periodoId !== undefined) {
+      payload.periodoId = data.periodoId;
+    }
+
+    if (data.imagensUrls && data.imagensUrls.length > 0) {
+      const imagensUrls = await uploadImagens(data.imagensUrls as any);
+      payload.imagensUrls = imagensUrls;
+    }
+
+    const response = await Client.put(
+      `/releases/enterprise/${empresaId}/release/${id}`,
+      payload,
+    );
+
+    if (!response.data || !response.data.success) {
+      throw new Error(
+        response.data?.error || "Erro ao atualizar lançamento",
+      );
+    }
+
+    return response.data.data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message || `Erro ao atualizar lançamento: ${error.message}`,
+    );
+  }
 };
 
 export const deletarLancamento = async (
