@@ -243,7 +243,7 @@ export default function EnterpriseSettingsPage() {
                 <Label htmlFor="situacaoCadastral" className="text-indigo-900">
                   Situação Cadastral *
                 </Label>
-                <Input
+                <select
                   id="situacaoCadastral"
                   value={enterpriseData.situacaoCadastral}
                   onChange={(e) =>
@@ -252,15 +252,21 @@ export default function EnterpriseSettingsPage() {
                       situacaoCadastral: e.target.value,
                     })
                   }
-                  className="border-indigo-100 focus:border-indigo-300"
-                />
+                  className="w-full py-2 px-3 border border-indigo-100 rounded-md focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all outline-none text-indigo-900"
+                >
+                  <option value="">Selecione...</option>
+                  <option value="Ativa">Ativa</option>
+                  <option value="Suspensa">Suspensa</option>
+                  <option value="Inapta">Inapta</option>
+                  <option value="Baixada">Baixada</option>
+                </select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="naturezaJuridica" className="text-indigo-900">
                   Natureza Jurídica *
                 </Label>
-                <Input
+                <select
                   id="naturezaJuridica"
                   value={enterpriseData.naturezaJuridica}
                   onChange={(e) =>
@@ -269,8 +275,17 @@ export default function EnterpriseSettingsPage() {
                       naturezaJuridica: e.target.value,
                     })
                   }
-                  className="border-indigo-100 focus:border-indigo-300"
-                />
+                  className="w-full py-2 px-3 border border-indigo-100 rounded-md focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all outline-none text-indigo-900"
+                >
+                  <option value="">Selecione...</option>
+                  <option value="LTDA">Sociedade Limitada (LTDA)</option>
+                  <option value="SA">Sociedade Anônima (S.A.)</option>
+                  <option value="MEI">Microempreendedor Individual (MEI)</option>
+                  <option value="EIRELI">
+                    Empresa Individual de Responsabilidade Limitada (EIRELI)
+                  </option>
+                  <option value="EI">Empresário Individual (EI)</option>
+                </select>
               </div>
 
               <div className="space-y-2 md:col-span-2">

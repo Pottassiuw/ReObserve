@@ -53,6 +53,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { formatCurrency } from "@/utils/formatters";
 import {
   listarPeriodos,
   buscarPeriodo,
@@ -456,7 +457,7 @@ export default function PeriodsPage() {
                             {period.lancamentos?.length || 0}
                           </TableCell>
                           <TableCell>
-                            R$ {(period.valorTotal || 0).toFixed(2)}
+                            {formatCurrency((period.valorTotal || 0))}
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
@@ -599,7 +600,7 @@ export default function PeriodsPage() {
                           <div>
                             <p className="text-gray-600">Valor Total</p>
                             <p className="font-semibold text-green-600">
-                              R$ {(period.valorTotal || 0).toFixed(2)}
+                              {formatCurrency((period.valorTotal || 0))}
                             </p>
                           </div>
                         </div>
@@ -715,7 +716,7 @@ export default function PeriodsPage() {
                   <div>
                     <Label className="text-sm text-gray-600">Valor Total</Label>
                     <p className="font-medium">
-                      R$ {(selectedPeriod.valorTotal || 0).toFixed(2)}
+                      {formatCurrency((selectedPeriod.valorTotal || 0))}
                     </p>
                   </div>
                 </div>
@@ -753,7 +754,7 @@ export default function PeriodsPage() {
                                   ).toLocaleDateString("pt-BR")}
                                 </TableCell>
                                 <TableCell>
-                                  R$ {(lanc.notaFiscal?.valor || 0).toFixed(2)}
+                                  {formatCurrency((lanc.notaFiscal?.valor || 0))}
                                 </TableCell>
                               </TableRow>
                             ))}

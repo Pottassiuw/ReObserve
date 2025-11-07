@@ -24,6 +24,7 @@ import {
   Image,
   X,
 } from "lucide-react";
+import { formatCurrency } from "@/utils/formatters";
 
 interface ViewPeriodModalProps {
   open: boolean;
@@ -127,7 +128,7 @@ const ViewPeriodModal = ({
                     <div>
                       <p className="text-xs text-gray-500">Valor Total</p>
                       <p className="text-2xl font-bold text-green-600">
-                        R$ {(period.valorTotal || 0).toFixed(2)}
+                        {formatCurrency(period.valorTotal || 0)}
                       </p>
                     </div>
                   </div>
@@ -223,7 +224,7 @@ const ViewPeriodModal = ({
                               {lancamento.imagens?.length || 0}
                             </Badge>
                             <p className="font-bold text-green-600">
-                              R$ {lancamento.notaFiscal?.valor?.toFixed(2)}
+                              {formatCurrency(lancamento.notaFiscal?.valor || 0)}
                             </p>
                           </div>
                         </div>
@@ -243,7 +244,7 @@ const ViewPeriodModal = ({
                             <div>
                               <p className="text-xs text-gray-500">Valor</p>
                               <p className="font-semibold text-green-600">
-                                R$ {lancamento.notaFiscal?.valor?.toFixed(2)}
+                                {formatCurrency(lancamento.notaFiscal?.valor || 0)}
                               </p>
                             </div>
                             <div>

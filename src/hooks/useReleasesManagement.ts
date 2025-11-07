@@ -30,8 +30,10 @@ export const useReleasesManagement = () => {
   if (!userId) throw new Error("Id deve ser fornecido");
   const getEmpresaId = useCallback((): number => {
     if (userType === "enterprise") {
-      return userId; 
+      return userId; // Para empresas, userId é o empresaId
     }
+    // Para usuários, precisamos buscar o empresaId do backend
+    // Por enquanto, retornamos userId (isso será corrigido)
     return userId;
   }, [userId, userType]);
 
@@ -50,7 +52,14 @@ export const useReleasesManagement = () => {
         userId,
         empresaId,
       });
-      const data = await listarLancamentos(empresaId);
+      
+      // Para empresas, usar sua própria rota
+      let data;
+      if (userType === "enterprise") {
+        data = await listarLancamentos(userId); // userId é o empresaId para empresas
+      } else {
+        data = await listarLancamentos(empresaId);
+      }
       console.log(data);
       const releasesArray = Array.isArray(data) ? data : [];
       console.log("✅ Releases carregados:", releasesArray.length);
@@ -107,9 +116,14 @@ export const useReleasesManagement = () => {
       const empresaId = getEmpresaId();
       const releaseData: CriarLancamentoDTO = {
         ...data,
-        usuarioId: userId,
         empresaId: empresaId,
       };
+      
+      // Só adiciona usuarioId se for um usuário (não empresa)
+      if (userType === "user") {
+        releaseData.usuarioId = userId;
+      }
+      // Para empresas, o usuarioId é opcional e será tratado pelo backend
       setLoading(true);
       setError(null);
       try {

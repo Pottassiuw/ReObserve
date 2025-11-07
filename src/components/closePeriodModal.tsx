@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/utils/formatters";
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -174,7 +175,7 @@ const ClosePeriodModal = ({
             <div className="text-right">
               <p className="text-sm text-gray-600">Valor Total</p>
               <p className="text-2xl font-bold text-green-600">
-                R$ {totalValue.toFixed(2)}
+                {formatCurrency(totalValue)}
               </p>
             </div>
           </div>
@@ -236,7 +237,7 @@ const ClosePeriodModal = ({
                           <div>
                             <p className="text-xs text-gray-500">Valor</p>
                             <p className="font-semibold text-green-600">
-                              R$ {release.notaFiscal?.valor?.toFixed(2)}
+                              {formatCurrency(release.notaFiscal?.valor || 0)}
                             </p>
                           </div>
                           <div>

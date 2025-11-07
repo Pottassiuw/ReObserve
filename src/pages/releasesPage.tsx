@@ -48,6 +48,7 @@ import {
 import ReleaseModal from "@/components/releaseModal";
 import { useReleasesManagement } from "@/hooks/useReleasesManagement";
 import { toast } from "sonner";
+import { formatCurrency } from "@/utils/formatters";
 
 type ModalMode = "view" | "edit" | "create";
 
@@ -310,7 +311,7 @@ export default function ReleasesPage() {
                           </TableCell>
                           <TableCell>
                             {release.notaFiscal?.valor
-                              ? `R$ ${release.notaFiscal.valor.toFixed(2)}`
+                              ? formatCurrency(release.notaFiscal.valor)
                               : "-"}
                           </TableCell>
                           <TableCell className="text-xs">
@@ -431,7 +432,7 @@ export default function ReleasesPage() {
                             <p className="text-gray-600">Valor</p>
                             <p className="font-semibold text-green-600">
                               {release.notaFiscal?.valor
-                                ? `R$ ${release.notaFiscal.valor.toFixed(2)}`
+                                ? formatCurrency(release.notaFiscal.valor)
                                 : "-"}
                             </p>
                           </div>

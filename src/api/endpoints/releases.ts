@@ -134,13 +134,14 @@ export const criarLancamento = async (
     throw new Error("ID da empresa é obrigatório.");
   }
 
-  if (!data.usuarioId) {
-    throw new Error("ID do usuário é obrigatório.");
-  }
+  // usuarioId é opcional para empresas
+  // if (!data.usuarioId) {
+  //   throw new Error("ID do usuário é obrigatório.");
+  // }
 
   console.log("📸 Enviando", data.imagensUrls.length, "URLs de imagens...");
 
-  const payload: CriarLancamentoBackendPayload = {
+  const payload: any = {
     notaFiscal: {
       numero: data.numeroNotaFiscal,
       valor: data.valor,
@@ -152,9 +153,13 @@ export const criarLancamento = async (
     longitude: data.longitude,
     periodoId: data.periodoId,
     imagensUrls: data.imagensUrls,
-    usuarioId: data.usuarioId,
     empresaId: data.empresaId,
   };
+
+  // Só adiciona usuarioId se existir
+  if (data.usuarioId) {
+    payload.usuarioId = data.usuarioId;
+  }
 
   console.log("🚀 Enviando para o backend:", payload);
 
