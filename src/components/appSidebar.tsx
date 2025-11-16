@@ -179,55 +179,42 @@ export default function AppSidebarRedesigned() {
     const button = (
       <SidebarMenuButton
         className={cn(
-          // Base styles para centralização vertical
-          "group relative flex items-center transition-all duration-200",
-          "min-h-[44px] h-11", // Altura mínima para touch targets
+          "group relative flex items-center",
+          "min-h-[44px] h-11",
           
-          // Estilos dependendo do estado collapsed/expanded
           isCollapsed 
             ? "w-11 h-11 justify-center rounded-lg mx-auto" 
             : "w-full px-3 py-2.5 rounded-lg",
           
-          // Estados de ativo/inativo - design simples
           isActive
-            ? "bg-slate-100 text-slate-900 font-medium border-l-3 border-slate-900"
-            : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            ? "bg-indigo-50 text-indigo-900"
+            : "text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"
         )}
         onClick={() => handleNavigation(item.path)}
         isActive={isActive}
       >
-        <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
-          <item.icon
-            className={cn(
-              "w-5 h-5 transition-colors duration-200",
-              isActive 
-                ? "text-slate-900" 
-                : "text-slate-500 group-hover:text-slate-700"
-            )}
-          />
-        </div>
+        <item.icon
+          className={cn(
+            "w-5 h-5",
+            isActive 
+              ? "text-indigo-600" 
+              : "text-slate-500 group-hover:text-indigo-600"
+          )}
+        />
         
         {!isCollapsed && (
-          <span className="ml-3 text-sm leading-none">
+          <span className="ml-3 text-sm">
             {item.label}
           </span>
-        )}
-        
-        {/* Indicador simples para modo collapsed */}
-        {isCollapsed && isActive && (
-          <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-1 h-6 bg-slate-900 rounded-r" />
         )}
       </SidebarMenuButton>
     );
 
     if (isCollapsed) {
       return (
-        <Tooltip key={item.id} delayDuration={100}>
+        <Tooltip key={item.id}>
           <TooltipTrigger asChild>{button}</TooltipTrigger>
-          <TooltipContent 
-            side="right" 
-            className="font-medium bg-slate-900 text-white border-slate-700"
-          >
+          <TooltipContent side="right">
             {item.label}
           </TooltipContent>
         </Tooltip>
@@ -241,15 +228,14 @@ export default function AppSidebarRedesigned() {
     <TooltipProvider>
       <Sidebar 
         collapsible="icon" 
-        className="border-r border-slate-200/60 bg-white shadow-sm"
+        className="border-r border-slate-200 bg-white"
       >
-        {/* Header com logo e título */}
         <SidebarHeader className={cn(
           "border-b border-slate-200",
           isCollapsed ? "px-3 py-4" : "px-4 py-4"
         )}>
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 flex-shrink-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
               <span className="text-white text-sm font-bold">R</span>
             </div>
             
@@ -266,17 +252,14 @@ export default function AppSidebarRedesigned() {
           </div>
         </SidebarHeader>
 
-        {/* Conteúdo principal com navegação */}
         <SidebarContent className={cn(
-          "flex flex-col",
-          isCollapsed ? "px-2 py-4" : "px-3 py-6"
+          isCollapsed ? "px-2 py-4" : "px-3 py-4"
         )}>
-          {/* Menu Principal */}
-          <SidebarGroup className="mb-6">
+          <SidebarGroup className="mb-4">
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-2">
+              <SidebarMenu className="space-y-1">
                 {getGroupItems("main").map((item) => (
-                  <SidebarMenuItem key={item.id} className="flex items-center">
+                  <SidebarMenuItem key={item.id}>
                     {renderMenuButton(item)}
                   </SidebarMenuItem>
                 ))}
@@ -284,21 +267,17 @@ export default function AppSidebarRedesigned() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {/* Seção Gerenciamento */}
           {hasManagement && (
-            <SidebarGroup className="mb-6">
+            <SidebarGroup className="mb-4">
               {!isCollapsed && (
                 <SidebarGroupLabel className="text-xs font-medium text-slate-500 px-3 mb-2">
                   Gerenciamento
                 </SidebarGroupLabel>
               )}
-              {isCollapsed && (
-                <div className="h-px bg-slate-200 mx-3 mb-2" />
-              )}
               <SidebarGroupContent>
-                <SidebarMenu className="space-y-2">
+                <SidebarMenu className="space-y-1">
                   {getGroupItems("management").map((item) => (
-                    <SidebarMenuItem key={item.id} className="flex items-center">
+                    <SidebarMenuItem key={item.id}>
                       {renderMenuButton(item)}
                     </SidebarMenuItem>
                   ))}
@@ -307,21 +286,17 @@ export default function AppSidebarRedesigned() {
             </SidebarGroup>
           )}
 
-          {/* Seção Usuários */}
           {hasUsers && (
-            <SidebarGroup className="mb-6">
+            <SidebarGroup className="mb-4">
               {!isCollapsed && (
                 <SidebarGroupLabel className="text-xs font-medium text-slate-500 px-3 mb-2">
                   Usuários
                 </SidebarGroupLabel>
               )}
-              {isCollapsed && (
-                <div className="h-px bg-slate-200 mx-3 mb-2" />
-              )}
               <SidebarGroupContent>
-                <SidebarMenu className="space-y-2">
+                <SidebarMenu className="space-y-1">
                   {getGroupItems("users").map((item) => (
-                    <SidebarMenuItem key={item.id} className="flex items-center">
+                    <SidebarMenuItem key={item.id}>
                       {renderMenuButton(item)}
                     </SidebarMenuItem>
                   ))}
@@ -330,13 +305,12 @@ export default function AppSidebarRedesigned() {
             </SidebarGroup>
           )}
 
-          {/* Configurações - sempre no final */}
           <div className="mt-auto">
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
                   {getGroupItems("settings").map((item) => (
-                    <SidebarMenuItem key={item.id} className="flex items-center">
+                    <SidebarMenuItem key={item.id}>
                       {renderMenuButton(item)}
                     </SidebarMenuItem>
                   ))}
@@ -346,16 +320,14 @@ export default function AppSidebarRedesigned() {
           </div>
         </SidebarContent>
 
-        {/* Footer com perfil e logout */}
         <SidebarFooter className={cn(
           "border-t border-slate-200",
           isCollapsed ? "p-3" : "p-4"
         )}>
           <div className="space-y-3">
-            {/* Perfil do Usuário */}
             {!isCollapsed ? (
-              <div className="flex items-center gap-3 p-2 rounded-lg">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 flex-shrink-0">
+              <div className="flex items-center gap-3 p-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
                   {userType === "enterprise" ? (
                     <Building2 className="h-4 w-4" />
                   ) : (
@@ -371,7 +343,7 @@ export default function AppSidebarRedesigned() {
                     {isAdminUser && (
                       <Badge
                         variant="secondary"
-                        className="text-[10px] px-1.5 py-0 bg-slate-100 text-slate-700"
+                        className="text-[10px] px-1.5 py-0 bg-indigo-100 text-indigo-700"
                       >
                         Admin
                       </Badge>
@@ -383,10 +355,10 @@ export default function AppSidebarRedesigned() {
                 </div>
               </div>
             ) : (
-              <Tooltip delayDuration={100}>
+              <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex justify-center">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
                       {userType === "enterprise" ? (
                         <Building2 className="h-4 w-4" />
                       ) : (
@@ -396,27 +368,25 @@ export default function AppSidebarRedesigned() {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  <div className="text-center">
+                  <div>
                     <div className="font-medium">
                       {userType === "enterprise" ? "Empresa" : "Usuário"}
                     </div>
-                    <div className="text-xs opacity-80">{userDisplayName}</div>
+                    <div className="text-xs text-slate-500">{userDisplayName}</div>
                     {isAdminUser && (
-                      <div className="text-xs mt-1 text-slate-500">Admin</div>
+                      <div className="text-xs text-indigo-600">Admin</div>
                     )}
                   </div>
                 </TooltipContent>
               </Tooltip>
             )}
 
-            {/* Botão Logout */}
-            <Tooltip delayDuration={100}>
+            <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   onClick={handleLogout}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-200",
-                    "text-slate-500 hover:text-red-600 hover:bg-red-50",
+                    "flex items-center gap-3 rounded-lg text-sm text-slate-500 hover:text-red-600 hover:bg-red-50",
                     isCollapsed
                       ? "w-8 h-8 justify-center mx-auto"
                       : "w-full px-2 py-2"
