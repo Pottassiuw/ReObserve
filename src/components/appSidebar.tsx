@@ -234,7 +234,10 @@ export default function AppSidebarRedesigned() {
           "border-b border-slate-200",
           isCollapsed ? "px-3 py-4" : "px-4 py-4"
         )}>
-          <div className="flex items-center gap-3">
+          <div className={cn(
+            "flex items-center",
+            isCollapsed ? "justify-center" : "gap-3"
+          )}>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
               <span className="text-white text-sm font-bold">R</span>
             </div>
