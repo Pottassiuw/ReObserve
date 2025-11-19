@@ -6,7 +6,6 @@ import { useEffect } from "react";
 
 function DashboardContent() {
   const { open, setOpen, isMobile } = useSidebar();
-
   useEffect(() => {
     if (!isMobile) return;
 

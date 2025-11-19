@@ -23,8 +23,7 @@ import {
   Settings,
   LogOut,
   Building2,
-  User,
-  ChevronRight,
+  User
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissionsStore } from "@/stores/permissionsStore";

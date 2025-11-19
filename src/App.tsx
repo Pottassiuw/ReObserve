@@ -12,9 +12,7 @@ export default function App() {
       initialize();
     }
   }, [initialized, initialize]);
-
   usePermissionsLoader();
-
   return (
     <>
       <Toaster position="top-center" richColors />
