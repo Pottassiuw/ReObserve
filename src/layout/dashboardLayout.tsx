@@ -12,7 +12,7 @@ function DashboardContent() {
     const handleClickOutside = (e: MouseEvent) => {
       const sidebar = document.querySelector('[data-sidebar="sidebar"]');
       const trigger = document.querySelector('[data-sidebar-trigger]');
-      
+
       if (
         open &&
         sidebar &&

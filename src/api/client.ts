@@ -1,7 +1,8 @@
 import axios from "axios";
 import { setAuthToken } from "@/utils/supabase-sdk";
 const Client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL 
+  baseURL: import.meta.env.VITE_API_URL,
+});
 console.log("🚀 Client.ts carregado");
 const storedToken = localStorage.getItem("auth-token");
 console.log(
