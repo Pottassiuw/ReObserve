@@ -28,7 +28,7 @@ function isValidCNPJ(cnpj: string): boolean {
     if (pos < 2) pos = 9;
   }
   resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
-  if (resultado != parseInt(digitos.charAt(1))) return false;
+  if (resultado !== parseInt(digitos.charAt(1))) return false;
   return true;
 }
 

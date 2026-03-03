@@ -1,7 +1,8 @@
 import axios from "axios";
 import { setAuthToken } from "@/utils/supabase-sdk";
 const Client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  // baseURL: import.meta.env.VITE_API_URL
+  baseURL: "http://localhost:4000"
 });
 console.log("🚀 Client.ts carregado");
 const storedToken = localStorage.getItem("auth-token");
@@ -11,14 +12,8 @@ console.log(
 );
 
 if (storedToken) {
-  console.log("✅ Configurando token inicial nos headers");
   Client.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
-  setAuthToken(storedToken);
-}
-
-if (storedToken) {
-  Client.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
-  setAuthToken(storedToken); // ⭐ IMPORTANTE: Também configura no Supabase
+  setAuthToken(storedToken); 
 }
 
 export function setGlobalAuthToken(token: string) {

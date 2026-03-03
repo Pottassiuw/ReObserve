@@ -79,7 +79,7 @@ export interface CriarLancamentoDTO {
 
   imagensUrls: string[];
 
-  usuarioId: number;
+  usuarioId?: number;
   empresaId: number;
   periodoId?: number;
 }

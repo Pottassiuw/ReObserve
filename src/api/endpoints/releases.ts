@@ -44,7 +44,6 @@ export const atualizarLancamento = async (
     }
 
     const payload: any = {};
-
     // Construir objeto notaFiscal se houver dados relacionados
     if (data.valor !== undefined || data.dataEmissao || data.xmlPath !== undefined || data.numeroNotaFiscal) {
       payload.notaFiscal = {};
@@ -57,7 +56,6 @@ export const atualizarLancamento = async (
       if (data.xmlPath !== undefined) {
         payload.notaFiscal.xmlPath = data.xmlPath;
       }
-      // Nota: numero não pode ser alterado normalmente, mas incluímos se fornecido
       if (data.numeroNotaFiscal) {
         payload.notaFiscal.numero = data.numeroNotaFiscal;
       }
@@ -83,7 +81,6 @@ export const atualizarLancamento = async (
       const imagensUrls = await uploadImagens(data.imagensUrls as any);
       payload.imagensUrls = imagensUrls;
     }
-
     const response = await Client.put(
       `/releases/enterprise/${empresaId}/release/${id}`,
       payload,
@@ -109,7 +106,6 @@ export const deletarLancamento = async (
 ): Promise<void> => {
   await Client.delete(`/releases/enterprise/${enterpriseId}/release/${id}`);
 };
-
 export const uploadXML = async (
   file: File,
 ): Promise<{ xml: string; data: Partial<Lancamento> }> => {
@@ -120,7 +116,6 @@ export const uploadXML = async (
   });
   return response.data?.data || response.data;
 };
-
 export const criarLancamento = async (
   data: CriarLancamentoDTO,
 ): Promise<Lancamento> => {
@@ -133,12 +128,6 @@ export const criarLancamento = async (
   if (!data.empresaId) {
     throw new Error("ID da empresa é obrigatório.");
   }
-
-  // usuarioId é opcional para empresas
-  // if (!data.usuarioId) {
-  //   throw new Error("ID do usuário é obrigatório.");
-  // }
-
   console.log("📸 Enviando", data.imagensUrls.length, "URLs de imagens...");
 
   const payload: any = {
@@ -162,10 +151,15 @@ export const criarLancamento = async (
   }
 
   console.log("🚀 Enviando para o backend:", payload);
+  try{
+    const response = await Client.post("/releases/enterprise", payload);
 
-  const response = await Client.post("/releases/enterprise", payload);
+    console.log("✅ Lançamento criado:", response.data);
 
-  console.log("✅ Lançamento criado:", response.data);
-
-  return response.data?.data || response.data;
+    return response.data?.data || response.data;
+  }
+  catch (error: any) {
+    console.error("Erro detalhado:", error?.response?.data);
+    throw new Error();
+  }
 };

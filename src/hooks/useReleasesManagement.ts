@@ -30,10 +30,8 @@ export const useReleasesManagement = () => {
   if (!userId) throw new Error("Id deve ser fornecido");
   const getEmpresaId = useCallback((): number => {
     if (userType === "enterprise") {
-      return userId; // Para empresas, userId é o empresaId
+      return userId;
     }
-    // Para usuários, precisamos buscar o empresaId do backend
-    // Por enquanto, retornamos userId (isso será corrigido)
     return userId;
   }, [userId, userType]);
 
@@ -117,8 +115,8 @@ export const useReleasesManagement = () => {
       const releaseData: CriarLancamentoDTO = {
         ...data,
         empresaId: empresaId,
-      };
-      
+        usuarioId: userType === "user" ? userId : undefined,
+      };      
       // Só adiciona usuarioId se for um usuário (não empresa)
       if (userType === "user") {
         releaseData.usuarioId = userId;

@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { base64ToBlob } from "./formatters";
 import { v4 as uuidV4 } from "uuid";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_PUBLISHABLE_KEY as string;
 const BUCKET_NAME = "Imagens";
 let customToken: string | null = null;
 
@@ -34,8 +34,7 @@ export async function diagnosticarSupabase(): Promise<void> {
     
     // Teste 2: Verificar se bucket específico existe
     console.log(`📂 Teste 2: Verificando bucket '${BUCKET_NAME}'...`);
-    const { data: files, error: filesError } = await supabase.storage
-      .from(BUCKET_NAME)
+    const { data: files, error: filesError } = await supabase.storage.from(BUCKET_NAME)
       .list('', { limit: 1 });
     
     if (filesError) {
