@@ -27,6 +27,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { atualizarUsuario } from "@/api/endpoints/users";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
+import { logInfo } from "@/utils/logger";
 
 export default function SettingsPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -61,15 +62,14 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (userId) {
-      console.log("📞 Chamando retornarUsuario com ID:", userId);
+      logInfo("Chamando retornarUsuario com ID", { userId });
       retornarUsuario(userId);
     }
   }, [userId, retornarUsuario]);
 
-
   useEffect(() => {
     if (currentUser) {
-      console.log("✏️ Atualizando userData com:", {
+      logInfo("Atualizando userData", {
         nome: currentUser.nome,
         email: currentUser.email,
       });
@@ -421,7 +421,6 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
-
       </div>
     </div>
   );

@@ -29,7 +29,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Mail, Calendar, Shield, Trash2, AlertTriangle } from "lucide-react";
+import {
+  Users,
+  Mail,
+  Calendar,
+  Shield,
+  Trash2,
+  AlertTriangle,
+} from "lucide-react";
 import { useUserStore } from "@/stores/userStore";
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissionsStore } from "@/stores/permissionsStore";
@@ -39,6 +46,7 @@ import {
   deletarTodosUsuariosEmpresa,
 } from "@/api/endpoints/users";
 import { toast } from "sonner";
+import { logInfo, logError, logDebug } from "@/utils/logger";
 
 export default function UserView() {
   const { user, isLoading, retornarUsuarios } = useUserStore();
@@ -57,7 +65,7 @@ export default function UserView() {
       if (!userId) return;
 
       if (userType === "user" && !isAdmin()) {
-        console.log("Usuário não tem permissão de admin para visualizar outros usuários");
+        logDebug("Usuário sem permissão de admin", { userType });
         return;
       }
 
@@ -66,17 +74,16 @@ export default function UserView() {
         if (userType === "enterprise") {
           targetId = userId;
           setEmpresaId(userId);
-        } 
-        else if (userType === "user") {
+        } else if (userType === "user") {
           const userData = await retornarUsuario(userId);
           targetId = userData.empresaId || userId;
           setEmpresaId(userData.empresaId || null);
         }
 
-        console.log("Buscando usuários para empresa:", targetId);
+        logInfo("Buscando usuários para empresa", { targetId });
         retornarUsuarios(targetId);
       } catch (error) {
-        console.error("Erro ao carregar usuários:", error);
+        logError("Erro ao carregar usuários", error);
       }
     };
 
@@ -88,19 +95,24 @@ export default function UserView() {
     try {
       await retornarUsuarios(empresaId);
     } catch (error) {
-      console.error("Erro ao recarregar usuários:", error);
+      logError("Erro ao recarregar usuários", error);
     }
   }, [empresaId, retornarUsuarios]);
 
-  const handleDeleteUser = useCallback((usuarioId: number) => {
-    // Verificar se o usuário está tentando se deletar
-    if (userType === "user" && usuarioId === userId) {
-      toast.error("Você não pode deletar a si mesmo. Entre em contato com um administrador da empresa.");
-      return;
-    }
-    setUserToDelete(usuarioId);
-    setDeleteUserDialogOpen(true);
-  }, [userId, userType]);
+  const handleDeleteUser = useCallback(
+    (usuarioId: number) => {
+      // Verificar se o usuário está tentando se deletar
+      if (userType === "user" && usuarioId === userId) {
+        toast.error(
+          "Você não pode deletar a si mesmo. Entre em contato com um administrador da empresa.",
+        );
+        return;
+      }
+      setUserToDelete(usuarioId);
+      setDeleteUserDialogOpen(true);
+    },
+    [userId, userType],
+  );
 
   const confirmDeleteUser = useCallback(async () => {
     if (!userToDelete || !empresaId) return;
@@ -143,14 +155,16 @@ export default function UserView() {
     setIsDeleting(true);
     try {
       await deletarTodosUsuariosEmpresa(empresaId);
-      
+
       // Se for usuário admin, informar que ele não foi deletado
       if (userType === "user") {
-        toast.success("Todos os usuários foram deletados com sucesso! (Você não foi deletado por motivos de segurança)");
+        toast.success(
+          "Todos os usuários foram deletados com sucesso! (Você não foi deletado por motivos de segurança)",
+        );
       } else {
         toast.success("Todos os usuários foram deletados com sucesso!");
       }
-      
+
       setDeleteAllDialogOpen(false);
       setDeleteAllConfirmText("");
       await reloadUsers();
@@ -224,11 +238,7 @@ export default function UserView() {
                     Administradores
                   </p>
                   <p className="text-2xl md:text-3xl font-bold text-purple-600">
-                    {isLoading ? (
-                      <Skeleton className="h-8 w-12" />
-                    ) : (
-                      adminCount
-                    )}
+                    {isLoading ? <Skeleton className="h-8 w-12" /> : adminCount}
                   </p>
                 </div>
                 <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-purple-100 flex items-center justify-center">
@@ -265,13 +275,13 @@ export default function UserView() {
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-3 md:pb-4">
             <div className="flex flex-col gap-1">
-              <CardTitle className="text-lg md:text-xl">Lista de Usuários</CardTitle>
+              <CardTitle className="text-lg md:text-xl">
+                Lista de Usuários
+              </CardTitle>
               <CardDescription className="text-xs md:text-sm">
-                {isLoading ? (
-                  "Carregando..."
-                ) : (
-                  `${users.length} ${users.length === 1 ? "usuário cadastrado" : "usuários cadastrados"}`
-                )}
+                {isLoading
+                  ? "Carregando..."
+                  : `${users.length} ${users.length === 1 ? "usuário cadastrado" : "usuários cadastrados"}`}
               </CardDescription>
             </div>
           </CardHeader>
@@ -305,13 +315,22 @@ export default function UserView() {
                         <TableHead className="w-[200px]">Nome</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Função</TableHead>
-                        <TableHead className="w-[150px]">Data de Criação</TableHead>
-                        {canDelete && <TableHead className="w-[100px] text-right">Ações</TableHead>}
+                        <TableHead className="w-[150px]">
+                          Data de Criação
+                        </TableHead>
+                        {canDelete && (
+                          <TableHead className="w-[100px] text-right">
+                            Ações
+                          </TableHead>
+                        )}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {users.map((usuario) => (
-                        <TableRow key={usuario.id} className="hover:bg-slate-50/50">
+                        <TableRow
+                          key={usuario.id}
+                          className="hover:bg-slate-50/50"
+                        >
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center shadow-sm">
@@ -434,26 +453,29 @@ export default function UserView() {
                                 : "N/A"}
                             </span>
                           </div>
-                          {canDelete && (userType !== "user" || usuario.id !== userId) && (
-                            <div className="pt-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDeleteUser(usuario.id)}
-                                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Deletar Usuário
-                              </Button>
-                            </div>
-                          )}
-                          {canDelete && userType === "user" && usuario.id === userId && (
-                            <div className="pt-2">
-                              <p className="text-xs text-muted-foreground italic text-center">
-                                Você não pode deletar a si mesmo
-                              </p>
-                            </div>
-                          )}
+                          {canDelete &&
+                            (userType !== "user" || usuario.id !== userId) && (
+                              <div className="pt-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteUser(usuario.id)}
+                                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Deletar Usuário
+                                </Button>
+                              </div>
+                            )}
+                          {canDelete &&
+                            userType === "user" &&
+                            usuario.id === userId && (
+                              <div className="pt-2">
+                                <p className="text-xs text-muted-foreground italic text-center">
+                                  Você não pode deletar a si mesmo
+                                </p>
+                              </div>
+                            )}
                         </div>
                       </CardContent>
                     </Card>
@@ -465,7 +487,10 @@ export default function UserView() {
         </Card>
 
         {/* Dialog de Confirmação - Deletar Usuário */}
-        <AlertDialog open={deleteUserDialogOpen} onOpenChange={setDeleteUserDialogOpen}>
+        <AlertDialog
+          open={deleteUserDialogOpen}
+          onOpenChange={setDeleteUserDialogOpen}
+        >
           <AlertDialogContent className="max-w-md mx-4">
             <AlertDialogHeader>
               <div className="flex items-center gap-3 mb-2">
@@ -479,7 +504,8 @@ export default function UserView() {
               <AlertDialogDescription className="text-base pt-2">
                 {userToDelete === userId && userType === "user" ? (
                   <span className="text-red-600 font-semibold">
-                    Você não pode deletar a si mesmo. Esta ação é bloqueada por motivos de segurança.
+                    Você não pode deletar a si mesmo. Esta ação é bloqueada por
+                    motivos de segurança.
                   </span>
                 ) : (
                   "Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita e todos os dados relacionados a este usuário serão perdidos permanentemente."
@@ -487,7 +513,7 @@ export default function UserView() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="flex-col sm:flex-row gap-2 mt-4">
-              <AlertDialogCancel 
+              <AlertDialogCancel
                 className="w-full sm:w-auto"
                 disabled={isDeleting}
               >
@@ -496,7 +522,9 @@ export default function UserView() {
               <AlertDialogAction
                 onClick={confirmDeleteUser}
                 className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
-                disabled={isDeleting || (userToDelete === userId && userType === "user")}
+                disabled={
+                  isDeleting || (userToDelete === userId && userType === "user")
+                }
               >
                 {userToDelete === userId && userType === "user" ? (
                   "Bloqueado"
@@ -517,7 +545,10 @@ export default function UserView() {
         </AlertDialog>
 
         {/* Dialog de Confirmação Dupla - Deletar Todos */}
-        <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+        <AlertDialog
+          open={deleteAllDialogOpen}
+          onOpenChange={setDeleteAllDialogOpen}
+        >
           <AlertDialogContent className="max-w-md mx-4">
             <AlertDialogHeader>
               <div className="flex items-center gap-3 mb-2">
@@ -535,7 +566,18 @@ export default function UserView() {
                   Você está prestes a deletar TODOS os usuários da empresa!
                 </p>
                 <p>
-                  Esta ação irá remover permanentemente <strong>{userType === "user" ? users.length - 1 : users.length} {userType === "user" ? (users.length - 1 === 1 ? "usuário" : "usuários") : (users.length === 1 ? "usuário" : "usuários")}</strong> e todos os dados relacionados.
+                  Esta ação irá remover permanentemente{" "}
+                  <strong>
+                    {userType === "user" ? users.length - 1 : users.length}{" "}
+                    {userType === "user"
+                      ? users.length - 1 === 1
+                        ? "usuário"
+                        : "usuários"
+                      : users.length === 1
+                        ? "usuário"
+                        : "usuários"}
+                  </strong>{" "}
+                  e todos os dados relacionados.
                   {userType === "user" && (
                     <span className="block mt-2 text-amber-600 font-semibold">
                       ⚠️ Você não será deletado por motivos de segurança.
@@ -543,7 +585,9 @@ export default function UserView() {
                   )}
                 </p>
                 <p className="text-sm text-muted-foreground pt-2 border-t">
-                  Para confirmar, digite <strong className="text-red-600">DELETAR TODOS</strong> no campo abaixo:
+                  Para confirmar, digite{" "}
+                  <strong className="text-red-600">DELETAR TODOS</strong> no
+                  campo abaixo:
                 </p>
                 <div className="pt-2">
                   <Label htmlFor="confirm-text" className="text-sm font-medium">
@@ -561,7 +605,7 @@ export default function UserView() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="flex-col sm:flex-row gap-2 mt-4">
-              <AlertDialogCancel 
+              <AlertDialogCancel
                 className="w-full sm:w-auto"
                 disabled={isDeleting}
                 onClick={() => setDeleteAllConfirmText("")}
@@ -571,7 +615,9 @@ export default function UserView() {
               <AlertDialogAction
                 onClick={confirmDeleteAll}
                 className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
-                disabled={isDeleting || deleteAllConfirmText !== "DELETAR TODOS"}
+                disabled={
+                  isDeleting || deleteAllConfirmText !== "DELETAR TODOS"
+                }
               >
                 {isDeleting ? (
                   <>

@@ -38,6 +38,7 @@ import { criarUsuario } from "@/api/endpoints/stores";
 import { formatCPF } from "@/utils/formatters";
 import { useGroups } from "@/hooks/useGroups";
 import { z } from "zod";
+import { logError, logDebug } from "@/utils/logger";
 
 export default function CreateUserPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -92,10 +93,12 @@ export default function CreateUserPage() {
 
   // Debug grupos carregados
   useEffect(() => {
-    console.log("Grupos carregados:", grupos);
-    console.log("Loading:", loadingGroups);
-    console.log("Error:", groupsError);
-    console.log("UserId:", userId);
+    logDebug("Grupos carregados", {
+      grupos,
+      loadingGroups,
+      groupsError,
+      userId,
+    });
   }, [grupos, loadingGroups, groupsError, userId]);
 
   const onSubmit = async (data: criarUsuarioInput) => {
@@ -128,7 +131,7 @@ export default function CreateUserPage() {
         description: error?.message || "Ocorreu um erro desconhecido",
         duration: 5000,
       });
-      console.error("Erro ao criar usuário:", error);
+      logError("Erro ao criar usuário", error);
     } finally {
       setIsLoading(false);
     }

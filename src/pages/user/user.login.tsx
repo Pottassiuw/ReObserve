@@ -11,6 +11,7 @@ import { LoginUsuarioSchema, type LoginUsuarioInput } from "@/lib/userSchemas";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { useAppNavigator } from "@/hooks/useAppNavigator";
+import { logError } from "@/utils/logger";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -40,7 +41,7 @@ export default function Login() {
         description: error?.message || "Ocorreu um erro desconhecido.",
         duration: 5000,
       });
-      console.error(error);
+      logError("Erro ao fazer login do usuário", error);
     } finally {
       setIsLoading(false);
     }

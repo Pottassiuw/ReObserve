@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { base64ToBlob } from "./formatters";
 import { v4 as uuidV4 } from "uuid";
-import { logInfo } from "./logger";
+import { logInfo, logDebug, logError } from "./logger";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_PUBLISHABLE_KEY as string;
@@ -18,43 +18,41 @@ export function setAuthToken(token: string) {
 
 // Função de diagnóstico para testar conectividade
 export async function diagnosticarSupabase(): Promise<void> {
-  console.log("🔍 Iniciando diagnóstico do Supabase...");
+  logDebug("Iniciando diagnóstico do Supabase");
 
   try {
     const supabase = getSupabaseClient();
 
     // Teste 1: Listar buckets
-    console.log("📋 Teste 1: Listando buckets...");
+    logDebug("Teste 1: Listando buckets");
     const { data: buckets, error: bucketsError } =
       await supabase.storage.listBuckets();
 
     if (bucketsError) {
-      console.error("❌ Erro ao listar buckets:", bucketsError);
+      logError("Erro ao listar buckets", bucketsError);
     } else {
-      console.log(
-        "✅ Buckets encontrados:",
-        buckets?.map((b) => b.name),
-      );
+      logDebug("Buckets encontrados", {
+        buckets: buckets?.map((b) => b.name),
+      });
     }
 
     // Teste 2: Verificar se bucket específico existe
-    console.log(`📂 Teste 2: Verificando bucket '${BUCKET_NAME}'...`);
+    logDebug(`Verificando bucket '${BUCKET_NAME}'`);
     const { data: files, error: filesError } = await supabase.storage
       .from(BUCKET_NAME)
       .list("", { limit: 1 });
 
     if (filesError) {
-      console.error(`❌ Erro ao acessar bucket '${BUCKET_NAME}':`, filesError);
+      logError(`Erro ao acessar bucket '${BUCKET_NAME}'`, filesError);
     } else {
-      console.log(
-        `✅ Bucket '${BUCKET_NAME}' acessível. Arquivos encontrados:`,
-        files?.length || 0,
-      );
+      logDebug(`Bucket '${BUCKET_NAME}' acessível`, {
+        fileCount: files?.length || 0,
+      });
     }
 
-    console.log("🎉 Diagnóstico concluído!");
+    logDebug("Diagnóstico concluído");
   } catch (error) {
-    console.error("💥 Erro no diagnóstico:", error);
+    logError("Erro no diagnóstico do Supabase", error);
   }
 }
 export function getSupabaseClient() {
@@ -76,7 +74,7 @@ export function getSupabaseClient() {
     },
   });
 
-  console.log("🔧 Cliente Supabase configurado", {
+  logDebug("Cliente Supabase configurado", {
     url: SUPABASE_URL,
     hasToken: !!customToken,
     tokenType: customToken ? "custom" : "anon",
@@ -91,10 +89,9 @@ export const uploadImagens = async (
     throw new Error("Token de autenticação não definido. Faça login primeiro.");
   }
 
-  console.log("🔍 Iniciando upload de imagens", {
+  logDebug("Iniciando upload de imagens", {
     quantidade: imagens.length,
     tokenExiste: !!customToken,
-    tokenPrefix: customToken.substring(0, 20) + "...",
   });
 
   const supabase = getSupabaseClient();
@@ -104,7 +101,7 @@ export const uploadImagens = async (
     const imagem = imagens[i];
 
     try {
-      console.log(`📤 Processando imagem ${i + 1}/${imagens.length}`);
+      logDebug(`Processando imagem ${i + 1}/${imagens.length}`);
 
       const blob = typeof imagem === "string" ? base64ToBlob(imagem) : imagem;
       const fileName = `${Date.now()}-${Math.random()
@@ -113,7 +110,7 @@ export const uploadImagens = async (
       const identifierUUID = uuidV4();
       const filePath = `${identifierUUID}/${fileName}`;
 
-      console.log(`📂 Fazendo upload para: ${filePath}`);
+      logDebug(`Fazendo upload para: ${filePath}`);
 
       const { error, data: uploadData } = await supabase.storage
         .from(BUCKET_NAME)
@@ -124,28 +121,28 @@ export const uploadImagens = async (
         });
 
       if (error) {
-        console.error(`❌ Erro no upload da imagem ${i + 1}:`, error);
-        console.error("Detalhes do erro:", {
+        logError(`Erro no upload da imagem ${i + 1}`, {
+          error,
           message: error.message,
           name: error.name,
         });
         throw new Error(`Falha ao subir imagem ${i + 1}: ${error.message}`);
       }
 
-      console.log(`✅ Upload da imagem ${i + 1} concluído:`, uploadData);
+      logDebug(`Upload da imagem ${i + 1} concluído`, { uploadData });
 
       const { data } = supabase.storage
         .from(BUCKET_NAME)
         .getPublicUrl(filePath);
       urls.push(data.publicUrl);
 
-      console.log(`🔗 URL pública gerada: ${data.publicUrl}`);
+      logDebug(`URL pública gerada: ${data.publicUrl}`);
     } catch (error) {
-      console.error(`💥 Erro ao processar imagem ${i + 1}:`, error);
+      logError(`Erro ao processar imagem ${i + 1}`, error);
       throw error;
     }
   }
 
-  console.log("🎉 Todas as imagens foram enviadas com sucesso!", urls);
+  logInfo("Todas as imagens foram enviadas com sucesso", { urls });
   return urls;
 };

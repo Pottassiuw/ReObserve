@@ -5,6 +5,7 @@ import {
   deletarUsuario,
   retornarUsuarios,
 } from "@/api/endpoints/users";
+import { logDebug } from "@/utils/logger";
 
 interface UserStore {
   user: User | User[] | null;
@@ -26,7 +27,7 @@ export const useUserStore = create<UserStore>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const usuario = await retornarUsuario(id);
-      console.log("🎯 Dados recebidos do backend:", usuario); // LOG IMPORTANTE
+      logDebug("Dados recebidos do backend", { usuario });
       set({ user: usuario, isLoading: false });
       return usuario;
     } catch (error: any) {
@@ -39,11 +40,10 @@ export const useUserStore = create<UserStore>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const usuarios = await retornarUsuarios(empresaId);
-      console.log("🎯 Dados recebidos do backend:", usuarios); // LOG IMPORTANTE
-      console.log(
-        "Dados ahahahaahahaha",
-        usuarios.map((user) => user.id),
-      );
+      logDebug("Dados recebidos do backend", {
+        count: usuarios.length,
+        ids: usuarios.map((user) => user.id),
+      });
       set({ user: usuarios.map((user) => ({ ...user })), isLoading: false });
       return usuarios;
     } catch (error: any) {

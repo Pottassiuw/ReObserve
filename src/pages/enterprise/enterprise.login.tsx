@@ -16,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "@/stores/authStore";
 import { formatCNPJ } from "@/utils/formatters";
+import { logError } from "@/utils/logger";
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +53,7 @@ export default function Login() {
         description: error?.message || "Ocorreu um erro desconhecido.",
         duration: 5000,
       });
-      console.error(error);
+      logError("Erro ao fazer login da empresa", error);
     } finally {
       setIsLoading(false);
     }

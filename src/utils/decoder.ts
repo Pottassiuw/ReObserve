@@ -1,3 +1,5 @@
+import { logError } from "@/utils/logger";
+
 // Função para decodificar JWT
 export const decodeJWT = (token: string) => {
   try {
@@ -11,7 +13,7 @@ export const decodeJWT = (token: string) => {
     );
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error("Erro ao decodificar JWT:", error);
+    logError("Erro ao decodificar JWT", error);
     return null;
   }
 };

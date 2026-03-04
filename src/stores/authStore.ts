@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { loginApi, logoutApi } from "@/api/endpoints/auth";
 import { decodeJWT } from "@/utils/decoder";
 import { setGlobalAuthToken, clearGlobalAuthToken } from "@/api/client";
+import { logError, logDebug } from "@/utils/logger";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -52,7 +53,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         initialized: true,
       });
     } catch (error) {
-      console.error("❌ Erro no login:", error);
+      logError("Erro no login", error);
       clearGlobalAuthToken();
       set({
         isAuthenticated: false,
@@ -84,7 +85,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   initialize: () => {
     const token = localStorage.getItem("auth-token");
     if (!token) {
-      console.log("❌ Sem token");
+      logDebug("Sem token na inicialização");
       set({
         isAuthenticated: false,
         userType: null,
@@ -101,7 +102,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const userId = decoded?.sub ? parseInt(decoded.sub, 10) : null;
 
       if (!decoded || !decoded.type || !userId) {
-        console.log("❌ Token inválido");
+        logDebug("Token inválido");
         clearGlobalAuthToken();
         set({
           isAuthenticated: false,
@@ -125,7 +126,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         initialized: true,
       });
     } catch (error) {
-      console.error("❌ Erro ao inicializar:", error);
+      logError("Erro ao inicializar", error);
       clearGlobalAuthToken();
       set({
         isAuthenticated: false,

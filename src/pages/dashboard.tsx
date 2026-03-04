@@ -35,6 +35,7 @@ import { buscarDadosDashboard } from "@/api/endpoints/dashboard";
 import type { DashboardData } from "@/api/endpoints/dashboard";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
+import { logError } from "@/utils/logger";
 
 export default function Dashboard() {
   const { userId, userType } = useAuthStore();
@@ -61,7 +62,7 @@ export default function Dashboard() {
       setData(dadosDashboard);
     } catch (err) {
       setError("Erro ao carregar dados do dashboard");
-      console.error(err);
+      logError("Erro ao carregar dashboard", err);
     } finally {
       setLoading(false);
     }

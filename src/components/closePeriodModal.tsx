@@ -18,6 +18,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle, Image, Lock } from "lucide-react";
 import { toast } from "sonner";
 import Client from "@/api/client";
+import { logError } from "@/utils/logger";
 
 interface Release {
   id: number;
@@ -74,7 +75,7 @@ const ClosePeriodModal = ({
       );
       setReleases(response.data?.data || []);
     } catch (error: any) {
-      console.error("Erro ao carregar lançamentos:", error);
+      logError("Erro ao carregar lançamentos", error);
       toast.error("Erro ao carregar lançamentos disponíveis");
     } finally {
       setIsFetching(false);
@@ -120,7 +121,7 @@ const ClosePeriodModal = ({
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Erro ao fechar período:", error);
+      logError("Erro ao fechar período", error);
       toast.error(error.response?.data?.message || "Erro ao fechar período");
     } finally {
       setIsLoading(false);

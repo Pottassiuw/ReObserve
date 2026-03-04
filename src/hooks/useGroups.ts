@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { deletarGrupo, listarGrupos, criarGrupo } from "@/api/endpoints/groups";
 import type { Grupo } from "@/types";
 import { toast } from "sonner";
+import { logError } from "@/utils/logger";
 
 interface UseGroupsProps {
   empresaId?: number;
@@ -45,7 +46,7 @@ export const useGroups = ({
     } catch (err: any) {
       const errorMessage = err.message || "Erro ao carregar grupos";
       setError(errorMessage);
-      console.error("Erro ao carregar grupos:", err);
+      logError("Erro ao carregar grupos", err);
     } finally {
       setIsLoading(false);
     }
