@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissionsStore, Permissoes } from "@/stores/permissionsStore";
+import { logInfo, logError } from "@/utils/logger";
 import { retornarUsuario } from "@/api/endpoints/users";
+import { ALL_PERMISSIONS, BASIC_PERMISSIONS } from "@/constants";
 
 export const usePermissionsLoader = () => {
   const { userId, userType, isAuthenticated } = useAuthStore();
@@ -17,22 +19,12 @@ export const usePermissionsLoader = () => {
       }
 
       try {
-        console.log("🔄 Carregando permissões para:", { userId, userType });
+        logInfo("Loading permissions", { userId, userType });
 
         if (userType === "enterprise") {
-          setPermissions([
-            Permissoes.admin,
-            Permissoes.lancamento,
-            Permissoes.periodo,
-            Permissoes.verLancamentos,
-            Permissoes.editarLancamentos,
-            Permissoes.verPeriodos,
-            Permissoes.editarPeriodos,
-            Permissoes.deletarLancamentos,
-            Permissoes.deletarPeriodos,
-          ]);
+          setPermissions(ALL_PERMISSIONS);
           setPermissionsLoaded(true);
-          console.log("✅ Permissões de empresa carregadas");
+          logInfo("Enterprise permissions loaded");
           return;
         }
 
@@ -40,26 +32,16 @@ export const usePermissionsLoader = () => {
           const userData = await retornarUsuario(userId);
 
           if (userData.admin) {
-            setPermissions([
-              Permissoes.admin,
-              Permissoes.lancamento,
-              Permissoes.periodo,
-              Permissoes.verLancamentos,
-              Permissoes.editarLancamentos,
-              Permissoes.verPeriodos,
-              Permissoes.editarPeriodos,
-              Permissoes.deletarLancamentos,
-              Permissoes.deletarPeriodos,
-            ]);
+            setPermissions(ALL_PERMISSIONS);
             setPermissionsLoaded(true);
-            console.log("✅ Permissões de admin carregadas");
+            logInfo("Admin permissions loaded");
             return;
           }
 
           if (!userData?.grupo?.permissoes) {
-            setPermissions([Permissoes.lancamento, Permissoes.verLancamentos]);
+            setPermissions(BASIC_PERMISSIONS);
             setPermissionsLoaded(true);
-            console.log("✅ Permissões básicas carregadas");
+            logInfo("Basic permissions loaded");
             return;
           }
 
@@ -69,11 +51,11 @@ export const usePermissionsLoader = () => {
 
           setPermissions(permissions);
           setPermissionsLoaded(true);
-          console.log("✅ Permissões do grupo carregadas:", permissions);
+          logInfo("Group permissions loaded", { count: permissions.length });
         }
       } catch (error) {
-        console.error("❌ Erro ao carregar permissões:", error);
-        setPermissions([Permissoes.lancamento, Permissoes.verLancamentos]);
+        logError("Error loading permissions", error);
+        setPermissions(BASIC_PERMISSIONS);
         setPermissionsLoaded(true);
       }
     };

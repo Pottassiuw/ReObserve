@@ -3,6 +3,7 @@ import { useReleaseStore } from "@/stores/releaseStore";
 import type { CriarLancamentoDTO, Lancamento } from "@/types";
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissionsStore } from "@/stores/permissionsStore";
+import { logError, logInfo } from "@/utils/logger";
 import {
   listarLancamentos,
   retornarLancamento,
@@ -10,6 +11,7 @@ import {
   atualizarLancamento,
   deletarLancamento,
 } from "@/api/endpoints/releases";
+
 export const useReleasesManagement = () => {
   const {
     releases,
@@ -27,13 +29,8 @@ export const useReleasesManagement = () => {
   const { userId, userType } = useAuthStore();
   const { canViewRelease, canCreateRelease, canEditRelease, canDeleteRelease } =
     usePermissionsStore();
+
   if (!userId) throw new Error("Id deve ser fornecido");
-  const getEmpresaId = useCallback((): number => {
-    if (userType === "enterprise") {
-      return userId;
-    }
-    return userId;
-  }, [userId, userType]);
 
   const loadReleases = useCallback(async () => {
     if (!canViewRelease()) {
@@ -43,24 +40,10 @@ export const useReleasesManagement = () => {
     setLoading(true);
     setError(null);
     try {
-      const empresaId = getEmpresaId();
-
-      console.log("🔍 Carregando releases...", {
-        userType,
-        userId,
-        empresaId,
-      });
-      
-      // Para empresas, usar sua própria rota
-      let data;
-      if (userType === "enterprise") {
-        data = await listarLancamentos(userId); // userId é o empresaId para empresas
-      } else {
-        data = await listarLancamentos(empresaId);
-      }
-      console.log(data);
+      logInfo("Loading releases", { userType, userId });
+      const data = await listarLancamentos(userId);
       const releasesArray = Array.isArray(data) ? data : [];
-      console.log("✅ Releases carregados:", releasesArray.length);
+      logInfo("Releases loaded", { count: releasesArray.length });
       setReleases(releasesArray);
     } catch (err: any) {
       const message =
@@ -68,20 +51,13 @@ export const useReleasesManagement = () => {
         err.message ||
         "Erro ao carregar lançamentos";
       setError(message);
-      console.error("❌ Erro ao carregar lançamentos:", err);
+      logError("Error loading releases", err);
       setReleases([]);
     } finally {
       setLoading(false);
     }
-  }, [
-    canViewRelease,
-    userId,
-    userType,
-    getEmpresaId,
-    setReleases,
-    setLoading,
-    setError,
-  ]);
+  }, [canViewRelease, userId, setReleases, setLoading, setError]);
+
   const loadRelease = useCallback(
     async (id: number) => {
       if (!canViewRelease()) {
@@ -98,30 +74,25 @@ export const useReleasesManagement = () => {
         const message =
           err.response?.data?.message || "Erro ao carregar lançamento";
         setError(message);
-        console.error("Erro ao carregar lançamento:", err);
+        logError("Error loading release", err);
       } finally {
         setLoading(false);
       }
     },
     [canViewRelease, setCurrentRelease, setLoading, setError],
   );
+
   const createRelease = useCallback(
     async (data: CriarLancamentoDTO) => {
       if (!canCreateRelease()) {
         setError("Você não tem permissão para criar lançamentos");
         throw new Error("Sem permissão");
       }
-      const empresaId = getEmpresaId();
       const releaseData: CriarLancamentoDTO = {
         ...data,
-        empresaId: empresaId,
+        empresaId: userId,
         usuarioId: userType === "user" ? userId : undefined,
-      };      
-      // Só adiciona usuarioId se for um usuário (não empresa)
-      if (userType === "user") {
-        releaseData.usuarioId = userId;
-      }
-      // Para empresas, o usuarioId é opcional e será tratado pelo backend
+      };
       setLoading(true);
       setError(null);
       try {
@@ -134,14 +105,15 @@ export const useReleasesManagement = () => {
           err.message ||
           "Erro ao criar lançamento";
         setError(message);
-        console.error("❌ Erro ao criar lançamento:", err);
+        logError("Error creating release", err);
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [canCreateRelease, userId, getEmpresaId, addRelease, setLoading, setError],
+    [canCreateRelease, userId, userType, addRelease, setLoading, setError],
   );
+
   const updateReleaseById = useCallback(
     async (id: number, data: Partial<Lancamento>) => {
       if (!canEditRelease()) {
@@ -153,10 +125,9 @@ export const useReleasesManagement = () => {
       setError(null);
 
       try {
-        const empresaId = getEmpresaId();
         const updated = await atualizarLancamento(
           id,
-          empresaId,
+          userId,
           data as Partial<CriarLancamentoDTO>,
         );
         updateRelease(id, updated);
@@ -165,13 +136,13 @@ export const useReleasesManagement = () => {
         const message =
           err.response?.data?.message || "Erro ao atualizar lançamento";
         setError(message);
-        console.error("Erro ao atualizar lançamento:", err);
+        logError("Error updating release", err);
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [canEditRelease, getEmpresaId, updateRelease, setLoading, setError],
+    [canEditRelease, userId, updateRelease, setLoading, setError],
   );
 
   const deleteRelease = useCallback(
@@ -189,13 +160,13 @@ export const useReleasesManagement = () => {
         const message =
           err.response?.data?.message || "Erro ao deletar lançamento";
         setError(message);
-        console.error("Erro ao deletar lançamento:", err);
+        logError("Error deleting release", err);
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [canDeleteRelease, removeRelease, setLoading, setError],
+    [canDeleteRelease, userId, removeRelease, setLoading, setError],
   );
 
   return {
@@ -209,13 +180,11 @@ export const useReleasesManagement = () => {
     updateRelease: updateReleaseById,
     deleteRelease,
     setCurrentRelease,
-    // Permissões
     canCreate: canCreateRelease(),
     canView: canViewRelease(),
     canEdit: canEditRelease(),
     canDelete: canDeleteRelease(),
-    // Expor empresaId e userId para uso nos componentes
-    empresaId: getEmpresaId(),
+    empresaId: userId,
     usuarioId: userId,
   };
 };

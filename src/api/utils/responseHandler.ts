@@ -1,27 +1,11 @@
-/**
- * API response handler utility for consistent error and success handling
- * Reduces code duplication across all API endpoint files
- */
-
 import type { ApiError } from "../../types/index";
 import { logError } from "../../utils/logger";
 
-/**
- * Standard structure for API responses
- */
 export interface ApiResponseHandler<T> {
   data: T | null;
   error: ApiError | null;
 }
 
-/**
- * Handles API responses and extracts data
- * Provides consistent error handling and logging
- *
- * @param response - The API response object
- * @param errorContext - Context for error messages (e.g., 'fetching releases')
- * @returns Extracted data or null if response is invalid
- */
 export const handleApiResponse = <T>(
   response: any,
   errorContext: string = "API request",
@@ -39,14 +23,6 @@ export const handleApiResponse = <T>(
   return null;
 };
 
-/**
- * Creates a standardized API error
- *
- * @param error - The error object or string
- * @param statusCode - HTTP status code
- * @param context - Context for the error
- * @returns ApiError object
- */
 export const createApiError = (
   error: any,
   statusCode?: number,
@@ -71,13 +47,6 @@ export const createApiError = (
   return apiError;
 };
 
-/**
- * Wraps an async API call with consistent error handling
- *
- * @param apiCall - The async function to execute
- * @param errorContext - Context for error messages
- * @returns Response handler with data or error
- */
 export const executeApiCall = async <T>(
   apiCall: () => Promise<any>,
   errorContext: string = "API call",
@@ -92,13 +61,6 @@ export const executeApiCall = async <T>(
   }
 };
 
-/**
- * Validates that a response has required fields
- *
- * @param data - The data to validate
- * @param requiredFields - Array of required field names
- * @returns true if all required fields exist
- */
 export const validateResponseData = (
   data: any,
   requiredFields: string[],
