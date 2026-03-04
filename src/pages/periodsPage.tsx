@@ -164,28 +164,36 @@ export default function PeriodsPage() {
       return;
     }
 
+    const loadingToastId = toast.loading("Criando período...");
     try {
       await criarPeriodo(createForm);
-      toast.success("Período criado!");
+      toast.success("Período criado com sucesso!", { id: loadingToastId });
       setIsCreateOpen(false);
       setCreateForm({ dataInicio: "", dataFim: "", observacoes: "" });
       loadPeriods();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Erro ao criar período", {
+        id: loadingToastId,
+      });
     }
   }, [createForm]);
 
   const handleView = useCallback(async (period: Period) => {
+    const loadingToastId = toast.loading("Carregando período...");
     try {
       const detailed = await buscarPeriodo(period.id);
       setSelectedPeriod(detailed);
       setIsViewOpen(true);
+      toast.dismiss(loadingToastId);
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Erro ao carregar período", {
+        id: loadingToastId,
+      });
     }
   }, []);
 
   const handleOpenClose = useCallback(async (period: Period) => {
+    const loadingToastId = toast.loading("Carregando lançamentos...");
     try {
       setSelectedPeriod(period);
       const releases = await buscarLancamentosDisponiveis();
@@ -193,26 +201,32 @@ export default function PeriodsPage() {
       setSelectedReleases([]);
       setReleaseSearchTerm("");
       setIsCloseOpen(true);
+      toast.dismiss(loadingToastId);
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Erro ao carregar lançamentos", {
+        id: loadingToastId,
+      });
     }
   }, []);
 
   const handleClose = async () => {
     if (!selectedPeriod) return;
 
+    const loadingToastId = toast.loading("Fechando período...");
     try {
       await fecharPeriodo(selectedPeriod.id, {
         lancamentosIds: selectedReleases,
         observacoes: closeForm.observacoes,
       });
-      toast.success("Período fechado!");
+      toast.success("Período fechado com sucesso!", { id: loadingToastId });
       setIsCloseOpen(false);
       setCloseForm({ observacoes: "" });
       setSelectedReleases([]);
       loadPeriods();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Erro ao fechar período", {
+        id: loadingToastId,
+      });
     }
   };
 
@@ -224,27 +238,33 @@ export default function PeriodsPage() {
       return;
     }
 
+    const loadingToastId = toast.loading("Reabrindo período...");
     try {
       await reabrirPeriodo(selectedPeriod.id, reopenForm.motivo);
-      toast.success("Período reaberto!");
+      toast.success("Período reaberto com sucesso!", { id: loadingToastId });
       setIsReopenOpen(false);
       setReopenForm({ motivo: "" });
       loadPeriods();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Erro ao reabrir período", {
+        id: loadingToastId,
+      });
     }
   };
 
   const handleDelete = async () => {
     if (!selectedPeriod) return;
 
+    const loadingToastId = toast.loading("Deletando período...");
     try {
       await deletarPeriodo(selectedPeriod.id);
-      toast.success("Período deletado!");
+      toast.success("Período deletado com sucesso!", { id: loadingToastId });
       setIsDeleteOpen(false);
       loadPeriods();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Erro ao deletar período", {
+        id: loadingToastId,
+      });
     }
   };
 
@@ -457,7 +477,7 @@ export default function PeriodsPage() {
                             {period.lancamentos?.length || 0}
                           </TableCell>
                           <TableCell>
-                            {formatCurrency((period.valorTotal || 0))}
+                            {formatCurrency(period.valorTotal || 0)}
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
@@ -600,7 +620,7 @@ export default function PeriodsPage() {
                           <div>
                             <p className="text-gray-600">Valor Total</p>
                             <p className="font-semibold text-green-600">
-                              {formatCurrency((period.valorTotal || 0))}
+                              {formatCurrency(period.valorTotal || 0)}
                             </p>
                           </div>
                         </div>
@@ -716,7 +736,7 @@ export default function PeriodsPage() {
                   <div>
                     <Label className="text-sm text-gray-600">Valor Total</Label>
                     <p className="font-medium">
-                      {formatCurrency((selectedPeriod.valorTotal || 0))}
+                      {formatCurrency(selectedPeriod.valorTotal || 0)}
                     </p>
                   </div>
                 </div>
@@ -754,7 +774,7 @@ export default function PeriodsPage() {
                                   ).toLocaleDateString("pt-BR")}
                                 </TableCell>
                                 <TableCell>
-                                  {formatCurrency((lanc.notaFiscal?.valor || 0))}
+                                  {formatCurrency(lanc.notaFiscal?.valor || 0)}
                                 </TableCell>
                               </TableRow>
                             ))}

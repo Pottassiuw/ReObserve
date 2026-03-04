@@ -84,18 +84,19 @@ export default function SettingsPage() {
     if (!userId || !currentUser) return;
 
     setIsSaving(true);
+    const toastId = toast.loading("Atualizando dados...");
     try {
       await atualizarUsuario(userId, {
         nome: userData.name,
         email: userData.email,
       });
-      toast.success("Dados atualizados com sucesso!");
+      toast.success("Dados atualizados com sucesso!", { id: toastId });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       // Recarregar dados
       await retornarUsuario(userId);
     } catch (error: any) {
-      toast.error(error.message || "Erro ao atualizar dados");
+      toast.error(error.message || "Erro ao atualizar dados", { id: toastId });
     } finally {
       setIsSaving(false);
     }
@@ -117,9 +118,10 @@ export default function SettingsPage() {
     }
 
     setIsSaving(true);
+    const toastId = toast.loading("Alterando senha...");
     try {
       await atualizarUsuario(userId, { senha: passwordData.newPassword });
-      toast.success("Senha alterada com sucesso!");
+      toast.success("Senha alterada com sucesso!", { id: toastId });
       setPasswordData({
         currentPassword: "",
         newPassword: "",
@@ -128,7 +130,7 @@ export default function SettingsPage() {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error: any) {
-      toast.error(error.message || "Erro ao alterar senha");
+      toast.error(error.message || "Erro ao alterar senha", { id: toastId });
     } finally {
       setIsSaving(false);
     }

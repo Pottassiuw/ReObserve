@@ -76,15 +76,20 @@ export default function EnterpriseSettingsPage() {
     if (!userId || !enterprise) return;
 
     setIsSaving(true);
+    const toastId = toast.loading("Atualizando dados da empresa...");
     try {
       await atualizarEmpresa(userId, enterpriseData);
-      toast.success("Dados da empresa atualizados com sucesso!");
+      toast.success("Dados da empresa atualizados com sucesso!", {
+        id: toastId,
+      });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       // Recarregar dados
       await getEnterprise(userId);
     } catch (error: any) {
-      toast.error(error.message || "Erro ao atualizar dados da empresa");
+      toast.error(error.message || "Erro ao atualizar dados da empresa", {
+        id: toastId,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -109,9 +114,10 @@ export default function EnterpriseSettingsPage() {
     }
 
     setIsSaving(true);
+    const toastId = toast.loading("Alterando senha...");
     try {
       await atualizarEmpresa(userId, { senha: passwordData.newPassword });
-      toast.success("Senha alterada com sucesso!");
+      toast.success("Senha alterada com sucesso!", { id: toastId });
       setPasswordData({
         currentPassword: "",
         newPassword: "",
@@ -120,7 +126,7 @@ export default function EnterpriseSettingsPage() {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error: any) {
-      toast.error(error.message || "Erro ao alterar senha");
+      toast.error(error.message || "Erro ao alterar senha", { id: toastId });
     } finally {
       setIsSaving(false);
     }
@@ -280,7 +286,9 @@ export default function EnterpriseSettingsPage() {
                   <option value="">Selecione...</option>
                   <option value="LTDA">Sociedade Limitada (LTDA)</option>
                   <option value="SA">Sociedade Anônima (S.A.)</option>
-                  <option value="MEI">Microempreendedor Individual (MEI)</option>
+                  <option value="MEI">
+                    Microempreendedor Individual (MEI)
+                  </option>
                   <option value="EIRELI">
                     Empresa Individual de Responsabilidade Limitada (EIRELI)
                   </option>
@@ -357,7 +365,9 @@ export default function EnterpriseSettingsPage() {
               <Shield className="h-5 w-5" />
               Segurança
             </CardTitle>
-            <CardDescription>Altere a senha de acesso da empresa</CardDescription>
+            <CardDescription>
+              Altere a senha de acesso da empresa
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <Alert className="bg-amber-50 border-amber-200">
@@ -464,4 +474,3 @@ export default function EnterpriseSettingsPage() {
     </div>
   );
 }
-
