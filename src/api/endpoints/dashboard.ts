@@ -1,4 +1,5 @@
 import Client from "@/api/client";
+import { logError } from "@/utils/logger";
 
 export interface DashboardStats {
   receitaTotal: number;
@@ -37,7 +38,7 @@ export const buscarDadosDashboard = async (): Promise<DashboardData> => {
     }
     return response.data.data;
   } catch (error) {
-    console.error("Erro ao buscar dados do dashboard:", error);
+    logError("Error fetching dashboard data", error);
     throw new Error(`Failed to fetch dashboard data: ${error}`);
   }
 };

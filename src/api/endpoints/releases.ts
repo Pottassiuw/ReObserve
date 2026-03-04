@@ -1,6 +1,7 @@
 import Client from "@/api/client";
 import { uploadImagens } from "@/utils/supabase-sdk";
 import type { Lancamento, CriarLancamentoDTO } from "@/types";
+import { logInfo, logError } from "@/utils/logger";
 
 export interface CriarLancamentoBackendPayload {
   notaFiscal: {
@@ -123,7 +124,7 @@ export const uploadXML = async (
 export const criarLancamento = async (
   data: CriarLancamentoDTO,
 ): Promise<Lancamento> => {
-  console.log("📤 Criando lançamento...", data);
+  logInfo("Creating release", data);
 
   if (!data.imagensUrls || data.imagensUrls.length === 0) {
     throw new Error("Pelo menos uma imagem é obrigatória.");
@@ -132,7 +133,7 @@ export const criarLancamento = async (
   if (!data.empresaId) {
     throw new Error("ID da empresa é obrigatório.");
   }
-  console.log("📸 Enviando", data.imagensUrls.length, "URLs de imagens...");
+  logInfo(`Sending ${data.imagensUrls.length} image URLs`);
 
   const payload: any = {
     notaFiscal: {
@@ -154,15 +155,15 @@ export const criarLancamento = async (
     payload.usuarioId = data.usuarioId;
   }
 
-  console.log("🚀 Enviando para o backend:", payload);
+  logInfo("Sending payload to backend");
   try {
     const response = await Client.post("/releases/enterprise", payload);
 
-    console.log("✅ Lançamento criado:", response.data);
+    logInfo("Release created successfully");
 
     return response.data?.data || response.data;
   } catch (error: any) {
-    console.error("Erro detalhado:", error?.response?.data);
+    logError("Error creating release", error?.response?.data);
     throw new Error(
       `Failed to reject release: ${error?.response?.data?.message || error?.message || "Unknown error"}`,
     );

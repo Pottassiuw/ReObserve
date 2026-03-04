@@ -1,5 +1,6 @@
 import Client from "@/api/client";
 import type { Grupo } from "@/types";
+import { logInfo } from "@/utils/logger";
 
 interface GrupoPayload {
   nome: string;
@@ -37,11 +38,15 @@ export const listarGrupos = async (empresaId: number): Promise<Grupo[]> => {
     if (!response || !response.data) {
       throw new Error("Nenhum dado recebido");
     }
-    console.log("📦 Resposta da API:", response.data);
+    logInfo("API response received", {
+      dataStructure: Object.keys(response.data),
+    });
 
     const grupos = response.data.data || response.data.grupos || response.data;
 
-    console.log("📋 Grupos extraídos:", grupos);
+    logInfo("Groups extracted", {
+      count: Array.isArray(grupos) ? grupos.length : 0,
+    });
     return Array.isArray(grupos) ? grupos : [];
   } catch (error: any) {
     throw new Error(

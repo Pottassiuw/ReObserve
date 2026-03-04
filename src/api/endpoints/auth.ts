@@ -1,4 +1,5 @@
 import Client, { setGlobalAuthToken, clearGlobalAuthToken } from "@/api/client";
+import { logError } from "@/utils/logger";
 
 export type EnterprisePayload = {
   cnpj: string;
@@ -24,7 +25,7 @@ export const loginApi = async (
 
     return data;
   } catch (error: any) {
-    console.error("Erro ao autenticar:", error.response?.data || error.message);
+    logError("Authentication error", error.response?.data || error.message);
     throw new Error("Falha no login.");
   }
 };
@@ -35,7 +36,7 @@ export const logoutApi = async (type: "user" | "enterprise") => {
     await Client.post(`${endpoint}/auth/logout`);
     clearGlobalAuthToken();
   } catch (error: any) {
-    console.error("Erro ao Deslogar:", error.response?.data || error.message);
+    logError("Logout error", error.response?.data || error.message);
     throw new Error("Falha no logout.");
   }
 };
