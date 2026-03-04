@@ -16,13 +16,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -35,17 +28,9 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Plus,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Eye,
-  Search,
-  X,
-  RefreshCw,
-} from "lucide-react";
+import { Plus, Search, X, RefreshCw } from "lucide-react";
 import ReleaseModal from "@/components/releaseModal";
+import ReleaseActions from "@/components/releaseActions";
 import { useReleasesManagement } from "@/hooks/useReleasesManagement";
 import { toast } from "sonner";
 import { formatCurrency } from "@/utils/formatters";
@@ -325,43 +310,14 @@ export default function ReleasesPage() {
                             ).toLocaleDateString("pt-BR")}
                           </TableCell>
                           <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => handleView(release)}
-                                >
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  Visualizar
-                                </DropdownMenuItem>
-                                {canEdit && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleEdit(release)}
-                                  >
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Editar
-                                  </DropdownMenuItem>
-                                )}
-                                {canDelete && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        handleDeleteClick(release.id)
-                                      }
-                                      className="text-red-600"
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Excluir
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <ReleaseActions
+                              release={release}
+                              canEdit={canEdit}
+                              canDelete={canDelete}
+                              onView={handleView}
+                              onEdit={handleEdit}
+                              onDelete={handleDeleteClick}
+                            />
                           </TableCell>
                         </TableRow>
                       ))}
@@ -385,47 +341,14 @@ export default function ReleasesPage() {
                                 "-"}
                             </p>
                           </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleView(release)}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                Visualizar
-                              </DropdownMenuItem>
-                              {canEdit && (
-                                <DropdownMenuItem
-                                  onClick={() => handleEdit(release)}
-                                >
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Editar
-                                </DropdownMenuItem>
-                              )}
-                              {canDelete && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      handleDeleteClick(release.id)
-                                    }
-                                    className="text-red-600"
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Excluir
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <ReleaseActions
+                            release={release}
+                            canEdit={canEdit}
+                            canDelete={canDelete}
+                            onView={handleView}
+                            onEdit={handleEdit}
+                            onDelete={handleDeleteClick}
+                          />
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 text-sm">
