@@ -1,4 +1,8 @@
-import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import {
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
 import AppSidebar from "@/components/appSidebar";
 import { Outlet } from "react-router-dom";
 import { Menu } from "lucide-react";
@@ -11,7 +15,7 @@ function DashboardContent() {
 
     const handleClickOutside = (e: MouseEvent) => {
       const sidebar = document.querySelector('[data-sidebar="sidebar"]');
-      const trigger = document.querySelector('[data-sidebar-trigger]');
+      const trigger = document.querySelector("[data-sidebar-trigger]");
 
       if (
         open &&
@@ -45,14 +49,16 @@ function DashboardContent() {
       )}
 
       <div className="relative flex min-h-screen w-full">
-        <div className={`${isMobile ? "fixed inset-y-0 left-0 z-50" : "shrink-0"}`}>
+        <div
+          className={`${isMobile ? "fixed inset-y-0 left-0 z-50" : "shrink-0"}`}
+        >
           <AppSidebar />
         </div>
 
         <div className="flex-1 flex flex-col min-w-0">
           {isMobile && !open && (
             <div className="fixed top-4 left-4 z-30 lg:hidden">
-              <SidebarTrigger 
+              <SidebarTrigger
                 className="bg-white hover:bg-slate-100 transition-colors rounded-lg p-3 shadow-lg border border-slate-200"
                 data-sidebar-trigger
               >
@@ -61,7 +67,7 @@ function DashboardContent() {
             </div>
           )}
 
-          <main className="flex-1 overflow-auto bg-slate-50 mt-10">
+          <main className="flex-1 overflow-auto bg-slate-50">
             <Outlet />
           </main>
         </div>
