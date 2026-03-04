@@ -45,7 +45,12 @@ export const atualizarLancamento = async (
 
     const payload: any = {};
     // Construir objeto notaFiscal se houver dados relacionados
-    if (data.valor !== undefined || data.dataEmissao || data.xmlPath !== undefined || data.numeroNotaFiscal) {
+    if (
+      data.valor !== undefined ||
+      data.dataEmissao ||
+      data.xmlPath !== undefined ||
+      data.numeroNotaFiscal
+    ) {
       payload.notaFiscal = {};
       if (data.valor !== undefined) {
         payload.notaFiscal.valor = data.valor;
@@ -87,15 +92,14 @@ export const atualizarLancamento = async (
     );
 
     if (!response.data || !response.data.success) {
-      throw new Error(
-        response.data?.error || "Erro ao atualizar lançamento",
-      );
+      throw new Error(response.data?.error || "Erro ao atualizar lançamento");
     }
 
     return response.data.data;
   } catch (error: any) {
     throw new Error(
-      error?.response?.data?.message || `Erro ao atualizar lançamento: ${error.message}`,
+      error?.response?.data?.message ||
+        `Erro ao atualizar lançamento: ${error.message}`,
     );
   }
 };
@@ -151,15 +155,16 @@ export const criarLancamento = async (
   }
 
   console.log("🚀 Enviando para o backend:", payload);
-  try{
+  try {
     const response = await Client.post("/releases/enterprise", payload);
 
     console.log("✅ Lançamento criado:", response.data);
 
     return response.data?.data || response.data;
-  }
-  catch (error: any) {
+  } catch (error: any) {
     console.error("Erro detalhado:", error?.response?.data);
-    throw new Error();
+    throw new Error(
+      `Failed to reject release: ${error?.response?.data?.message || error?.message || "Unknown error"}`,
+    );
   }
 };

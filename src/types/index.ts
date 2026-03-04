@@ -83,3 +83,24 @@ export interface CriarLancamentoDTO {
   empresaId: number;
   periodoId?: number;
 }
+
+/**
+ * Standard API error response structure
+ * Used for consistent error handling across the application
+ */
+export interface ApiError extends Error {
+  message: string;
+  status?: number;
+  code?: string;
+  data?: any;
+}
+
+/**
+ * Standard API response wrapper
+ * Used for consistent response handling
+ */
+export interface ApiResponse<T> {
+  data: T;
+  error?: ApiError;
+  success: boolean;
+}
