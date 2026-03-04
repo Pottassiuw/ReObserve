@@ -2,10 +2,11 @@ import { createClient } from "@supabase/supabase-js";
 import { base64ToBlob } from "./formatters";
 import { v4 as uuidV4 } from "uuid";
 import { logInfo, logDebug, logError } from "./logger";
+import { STORAGE_CONFIG } from "@/config";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_PUBLISHABLE_KEY as string;
-const BUCKET_NAME = "Imagens";
+const BUCKET_NAME = STORAGE_CONFIG.BUCKET_NAME;
 let customToken: string | null = null;
 
 export function setAuthToken(token: string) {
