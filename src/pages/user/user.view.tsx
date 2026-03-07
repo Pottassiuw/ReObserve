@@ -491,7 +491,7 @@ export default function UserView() {
           open={deleteUserDialogOpen}
           onOpenChange={setDeleteUserDialogOpen}
         >
-          <AlertDialogContent className="max-w-md mx-4">
+          <AlertDialogContent>
             <AlertDialogHeader>
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
@@ -549,7 +549,7 @@ export default function UserView() {
           open={deleteAllDialogOpen}
           onOpenChange={setDeleteAllDialogOpen}
         >
-          <AlertDialogContent className="max-w-md mx-4">
+          <AlertDialogContent>
             <AlertDialogHeader>
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">

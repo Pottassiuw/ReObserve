@@ -922,7 +922,7 @@ export default function PeriodsPage() {
 
         {/* Dialog Deletar */}
         <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-          <AlertDialogContent className="max-w-md mx-4">
+          <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
               <AlertDialogDescription>

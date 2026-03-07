@@ -255,7 +255,7 @@ export default function SettingsPage() {
               )}
             </div>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -266,14 +266,14 @@ export default function SettingsPage() {
                     });
                   }
                 }}
-                className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 w-full sm:w-auto"
                 disabled={isSaving}
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleSaveUserData}
-                className="bg-indigo-600 hover:bg-indigo-700"
+                className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto"
                 disabled={isSaving}
               >
                 {isSaving ? (
@@ -388,7 +388,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -398,14 +398,14 @@ export default function SettingsPage() {
                     confirmPassword: "",
                   });
                 }}
-                className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 w-full sm:w-auto"
                 disabled={isSaving}
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleSavePassword}
-                className="bg-indigo-600 hover:bg-indigo-700"
+                className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto"
                 disabled={isSaving}
               >
                 {isSaving ? (

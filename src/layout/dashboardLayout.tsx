@@ -67,7 +67,7 @@ function DashboardContent() {
             </div>
           )}
 
-          <main className="flex-1 overflow-auto bg-slate-50">
+          <main className="flex-1 overflow-auto bg-slate-50 p-5">
             <Outlet />
           </main>
         </div>

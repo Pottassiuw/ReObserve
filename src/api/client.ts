@@ -2,8 +2,9 @@ import axios from "axios";
 import { setAuthToken } from "@/utils/supabase-sdk";
 import { logInfo } from "@/utils/logger";
 
+const apiUrl = import.meta.env.VITE_ON_PRODUCTION ? import.meta.env.VITE_API_DEV_URL : import.meta.env.VITE_API_PRODUCTION_URL;
 const Client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: apiUrl,
 });
 
 logInfo("API Client initialized");

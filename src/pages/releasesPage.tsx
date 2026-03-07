@@ -397,7 +397,7 @@ export default function ReleasesPage() {
 
         {/* Dialog de Confirmação de Exclusão */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent className="max-w-md mx-4">
+          <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
               <AlertDialogDescription>
