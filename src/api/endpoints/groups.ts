@@ -74,6 +74,29 @@ export const listarGrupos = async (empresaId: number): Promise<Grupo[]> => {
 //  }
 //};
 
+export const atualizarGrupo = async (id: number, data: GrupoPayload): Promise<Grupo> => {
+  try {
+    if (!id) {
+      throw new Error("ID do grupo é obrigatório");
+    }
+    if (!data.nome) {
+      throw new Error("Nome do grupo é obrigatório");
+    }
+    if (!data.permissoes) {
+      throw new Error("Permissões do grupo são obrigatórias");
+    }
+    const response = await Client.put(`/groups/enterprises/groups/${id}`, data);
+    if (!response || !response.data) {
+      throw new Error("Nenhum dado recebido");
+    }
+    return response.data.data || response.data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message || `Erro ao atualizar grupo: ${error.message}`,
+    );
+  }
+};
+
 export const deletarGrupo = async (id: number): Promise<void> => {
   try {
     if (!id) {

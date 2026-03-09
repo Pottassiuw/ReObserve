@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useReleaseStore } from "@/stores/releaseStore";
-import type { CriarLancamentoDTO, Lancamento } from "@/types";
+import type { CriarLancamentoDTO } from "@/types";
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissionsStore } from "@/stores/permissionsStore";
 import { logError, logInfo } from "@/utils/logger";
@@ -115,7 +115,7 @@ export const useReleasesManagement = () => {
   );
 
   const updateReleaseById = useCallback(
-    async (id: number, data: Partial<Lancamento>) => {
+    async (id: number, data: Partial<CriarLancamentoDTO>) => {
       if (!canEditRelease()) {
         setError("Você não tem permissão para editar lançamentos");
         throw new Error("Sem permissão");

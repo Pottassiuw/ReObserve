@@ -1,43 +1,14 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
   Plus,
   Lock,
@@ -304,227 +275,74 @@ export default function PeriodsPage() {
       <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Períodos
-            </h1>
-            <p className="text-sm md:text-base text-gray-600 mt-1">
-              Gerencie os períodos contábeis
-            </p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Períodos</h1>
+            <p className="text-sm md:text-base text-gray-600 mt-1">Gerencie os períodos contábeis</p>
           </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleRefresh}
-              variant="outline"
-              disabled={isRefreshing}
-              className="flex-1 sm:flex-initial"
-            >
-              <RefreshCw
-                className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
-              />
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing} className="flex-1 sm:flex-initial">
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Atualizar</span>
             </Button>
-            <Button
-              onClick={() => setIsCreateOpen(true)}
-              className="bg-indigo-600 flex-1 sm:flex-initial"
-            >
+            <Button onClick={() => setIsCreateOpen(true)} className="bg-indigo-600 flex-1 sm:flex-initial">
               <Plus className="w-4 h-4 mr-2" />
               Novo
             </Button>
           </div>
         </div>
 
-        {/* Cards de Estatísticas -  */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-4 md:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total</p>
-                  <p className="text-2xl font-bold">{stats.total}</p>
-                </div>
-                <Calendar className="w-8 h-8 text-indigo-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 md:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Abertos</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {stats.abertos}
-                  </p>
-                </div>
-                <Unlock className="w-8 h-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 md:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Fechados</p>
-                  <p className="text-2xl font-bold text-gray-600">
-                    {stats.fechados}
-                  </p>
-                </div>
-                <Lock className="w-8 h-8 text-gray-600" />
-              </div>
-            </CardContent>
-          </Card>
+          <Card><CardContent className="p-4 md:p-6"><div className="flex items-center justify-between"><div><p className="text-sm text-gray-600">Total</p><p className="text-2xl font-bold">{stats.total}</p></div><Calendar className="w-8 h-8 text-indigo-600" /></div></CardContent></Card>
+          <Card><CardContent className="p-4 md:p-6"><div className="flex items-center justify-between"><div><p className="text-sm text-gray-600">Abertos</p><p className="text-2xl font-bold text-green-600">{stats.abertos}</p></div><Unlock className="w-8 h-8 text-green-600" /></div></CardContent></Card>
+          <Card><CardContent className="p-4 md:p-6"><div className="flex items-center justify-between"><div><p className="text-sm text-gray-600">Fechados</p><p className="text-2xl font-bold text-gray-600">{stats.fechados}</p></div><Lock className="w-8 h-8 text-gray-600" /></div></CardContent></Card>
         </div>
 
-        {/* Card Principal */}
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
               <div>
                 <CardTitle>Períodos Cadastrados</CardTitle>
-                <CardDescription className="text-xs sm:text-sm">
-                  {filteredPeriods.length} de {periods.length} períodos
-                </CardDescription>
+                <CardDescription className="text-xs sm:text-sm">{filteredPeriods.length} de {periods.length} períodos</CardDescription>
               </div>
-
-              {/* Busca */}
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar períodos..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 pr-9"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
+                <Input placeholder="Buscar períodos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 pr-9" />
+                {searchTerm && <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="h-4 w-4" /></button>}
               </div>
             </div>
           </CardHeader>
-
           <CardContent>
             {isLoading ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
+              <div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
             ) : filteredPeriods.length === 0 ? (
-              <p className="text-center text-gray-500 py-12">
-                {searchTerm
-                  ? "Nenhum período encontrado"
-                  : "Nenhum período cadastrado"}
-              </p>
+              <p className="text-center text-gray-500 py-12">{searchTerm ? "Nenhum período encontrado" : "Nenhum período cadastrado"}</p>
             ) : (
               <>
                 <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Início</TableHead>
-                        <TableHead>Fim</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Lançamentos</TableHead>
-                        <TableHead>Valor Total</TableHead>
-                        <TableHead>Ações</TableHead>
+                        <TableHead>ID</TableHead><TableHead>Início</TableHead><TableHead>Fim</TableHead><TableHead>Status</TableHead><TableHead>Lançamentos</TableHead><TableHead>Valor Total</TableHead><TableHead>Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredPeriods.map((period) => (
                         <TableRow key={period.id}>
-                          <TableCell className="font-medium">
-                            {period.id}
-                          </TableCell>
+                          <TableCell className="font-medium">{period.id}</TableCell>
+                          <TableCell>{new Date(period.dataInicio).toLocaleDateString("pt-BR")}</TableCell>
+                          <TableCell>{new Date(period.dataFim).toLocaleDateString("pt-BR")}</TableCell>
                           <TableCell>
-                            {new Date(period.dataInicio).toLocaleDateString(
-                              "pt-BR",
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(period.dataFim).toLocaleDateString(
-                              "pt-BR",
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              className={
-                                period.fechado
-                                  ? "bg-gray-100 text-gray-700"
-                                  : "bg-green-100 text-green-700"
-                              }
-                            >
-                              {period.fechado ? (
-                                <>
-                                  <Lock className="w-3 h-3 mr-1" />
-                                  Fechado
-                                </>
-                              ) : (
-                                <>
-                                  <Unlock className="w-3 h-3 mr-1" />
-                                  Aberto
-                                </>
-                              )}
+                            <Badge className={period.fechado ? "bg-gray-100 text-gray-700" : "bg-green-100 text-green-700"}>
+                              {period.fechado ? <><Lock className="w-3 h-3 mr-1" />Fechado</> : <><Unlock className="w-3 h-3 mr-1" />Aberto</>}
                             </Badge>
                           </TableCell>
+                          <TableCell>{period.lancamentos?.length || 0}</TableCell>
+                          <TableCell>{formatCurrency(period.valorTotal || 0)}</TableCell>
                           <TableCell>
-                            {period.lancamentos?.length || 0}
-                          </TableCell>
-                          <TableCell>
-                            {formatCurrency(period.valorTotal || 0)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleView(period)}
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-
-                              {!period.fechado && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleOpenClose(period)}
-                                  className="text-green-600"
-                                >
-                                  <CheckCircle className="w-4 h-4" />
-                                </Button>
-                              )}
-
-                              {period.fechado && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedPeriod(period);
-                                    setIsReopenOpen(true);
-                                  }}
-                                  className="text-amber-600"
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                </Button>
-                              )}
-
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedPeriod(period);
-                                  setIsDeleteOpen(true);
-                                }}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                            <div className="flex flex-wrap gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => handleView(period)}><Eye className="w-4 h-4" /></Button>
+                              {!period.fechado && <Button variant="ghost" size="sm" onClick={() => handleOpenClose(period)} className="text-green-600"><CheckCircle className="w-4 h-4" /></Button>}
+                              {period.fechado && <Button variant="ghost" size="sm" onClick={() => { setSelectedPeriod(period); setIsReopenOpen(true); }} className="text-amber-600"><XCircle className="w-4 h-4" /></Button>}
+                              <Button variant="ghost" size="sm" onClick={() => { setSelectedPeriod(period); setIsDeleteOpen(true); }} className="text-red-600"><Trash2 className="w-4 h-4" /></Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -532,97 +350,27 @@ export default function PeriodsPage() {
                     </TableBody>
                   </Table>
                 </div>
-
-                <div className="md:hidden space-y-3">
+                <div className="space-y-3 md:hidden">
                   {filteredPeriods.map((period) => (
                     <Card key={period.id}>
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-3">
                           <div>
-                            <p className="text-sm text-gray-600">
-                              Período #{period.id}
-                            </p>
-                            <Badge
-                              className={`mt-1 ${
-                                period.fechado
-                                  ? "bg-gray-100 text-gray-700"
-                                  : "bg-green-100 text-green-700"
-                              }`}
-                            >
-                              {period.fechado ? "Fechado" : "Aberto"}
-                            </Badge>
+                            <p className="text-sm text-gray-600">Período #{period.id}</p>
+                            <Badge className={`mt-1 ${period.fechado ? "bg-gray-100 text-gray-700" : "bg-green-100 text-green-700"}`}>{period.fechado ? "Fechado" : "Aberto"}</Badge>
                           </div>
                           <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleView(period)}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            {!period.fechado && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenClose(period)}
-                              >
-                                <CheckCircle className="w-4 h-4 text-green-600" />
-                              </Button>
-                            )}
-                            {period.fechado && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedPeriod(period);
-                                  setIsReopenOpen(true);
-                                }}
-                              >
-                                <XCircle className="w-4 h-4 text-amber-600" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedPeriod(period);
-                                setIsDeleteOpen(true);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleView(period)}><Eye className="w-4 h-4" /></Button>
+                            {!period.fechado && <Button variant="ghost" size="sm" onClick={() => handleOpenClose(period)}><CheckCircle className="w-4 h-4 text-green-600" /></Button>}
+                            {period.fechado && <Button variant="ghost" size="sm" onClick={() => { setSelectedPeriod(period); setIsReopenOpen(true); }}><XCircle className="w-4 h-4 text-amber-600" /></Button>}
+                            <Button variant="ghost" size="sm" onClick={() => { setSelectedPeriod(period); setIsDeleteOpen(true); }}><Trash2 className="w-4 h-4 text-red-600" /></Button>
                           </div>
                         </div>
-
                         <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div>
-                            <p className="text-gray-600">Início</p>
-                            <p className="font-medium">
-                              {new Date(period.dataInicio).toLocaleDateString(
-                                "pt-BR",
-                              )}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600">Fim</p>
-                            <p className="font-medium">
-                              {new Date(period.dataFim).toLocaleDateString(
-                                "pt-BR",
-                              )}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600">Lançamentos</p>
-                            <p className="font-semibold">
-                              {period.lancamentos?.length || 0}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600">Valor Total</p>
-                            <p className="font-semibold text-green-600">
-                              {formatCurrency(period.valorTotal || 0)}
-                            </p>
-                          </div>
+                          <div><p className="text-gray-600">Início</p><p className="font-medium">{new Date(period.dataInicio).toLocaleDateString("pt-BR")}</p></div>
+                          <div><p className="text-gray-600">Fim</p><p className="font-medium">{new Date(period.dataFim).toLocaleDateString("pt-BR")}</p></div>
+                          <div><p className="text-gray-600">Lançamentos</p><p className="font-semibold">{period.lancamentos?.length || 0}</p></div>
+                          <div><p className="text-gray-600">Valor Total</p><p className="font-semibold text-green-600">{formatCurrency(period.valorTotal || 0)}</p></div>
                         </div>
                       </CardContent>
                     </Card>
@@ -803,7 +551,7 @@ export default function PeriodsPage() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <div className="flex justify-between items-center mb-2">
+                <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <Label>Lançamentos Disponíveis</Label>
                   <Button
                     variant="outline"
@@ -839,7 +587,7 @@ export default function PeriodsPage() {
                     filteredAvailableReleases.map((release) => (
                       <div
                         key={release.id}
-                        className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                        className="flex items-start gap-3 rounded p-2 hover:bg-gray-50 cursor-pointer"
                         onClick={() => toggleRelease(release.id)}
                       >
                         <input
@@ -848,7 +596,7 @@ export default function PeriodsPage() {
                           onChange={() => toggleRelease(release.id)}
                           className="w-4 h-4"
                         />
-                        <span className="flex-1 text-sm">
+                        <span className="flex-1 break-words text-sm leading-relaxed">
                           NF-e: {release.notaFiscal?.numero} - R${" "}
                           {(release.notaFiscal?.valor || 0).toFixed(2)}
                         </span>

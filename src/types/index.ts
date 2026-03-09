@@ -45,6 +45,7 @@ export interface NotaFiscal {
   numero: string;
   valor: number | null;
   xmlPath: string | null;
+  xmlContent?: string | null;
   dataEmissao: Date;
   dataCriacao: Date;
   empresaId: number;
@@ -72,9 +73,10 @@ export interface CriarLancamentoDTO {
   valor: number;
   dataEmissao: Date;
   xmlPath?: string;
+  xmlContent?: string;
 
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   data_lancamento: Date;
 
   imagensUrls: string[];

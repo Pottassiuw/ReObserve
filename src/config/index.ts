@@ -5,9 +5,13 @@
 
 // Storage configuration
 export const STORAGE_CONFIG = {
-  BUCKET_NAME: "Imagens",
+  IMAGE_BUCKET_NAME: "Imagens",
+  XML_BUCKET_NAME: import.meta.env.VITE_XML_BUCKET_NAME || "Xml",
+  IMAGE_FOLDER: import.meta.env.VITE_IMAGE_FOLDER || "imagens",
+  XML_FOLDER: import.meta.env.VITE_XML_FOLDER || "xml",
   MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
-  ALLOWED_FORMATS: ["image/jpeg", "image/png", "image/gif"],
+  ALLOWED_IMAGE_FORMATS: ["image/jpeg", "image/png", "image/gif"],
+  ALLOWED_XML_FORMATS: ["application/xml", "text/xml", "text/plain"],
 } as const;
 
 // API configuration

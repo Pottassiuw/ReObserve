@@ -1,20 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import type { Lancamento } from "@/types";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +15,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search, X, RefreshCw } from "lucide-react";
 import ReleaseModal from "@/components/releaseModal";
@@ -44,6 +32,7 @@ export default function ReleasesPage() {
     isLoading,
     loadReleases,
     createRelease,
+    updateRelease,
     deleteRelease,
     setCurrentRelease,
     canCreate,
@@ -56,7 +45,7 @@ export default function ReleasesPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("create");
-  const [selectedRelease, setSelectedRelease] = useState(null);
+  const [selectedRelease, setSelectedRelease] = useState<Lancamento | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [releaseToDelete, setReleaseToDelete] = useState<number | null>(null);
 
@@ -89,7 +78,7 @@ export default function ReleasesPage() {
   }, [releases, searchTerm]);
 
   const openModal = useCallback(
-    (mode: ModalMode, release = null) => {
+    (mode: ModalMode, release: Lancamento | null = null) => {
       setModalMode(mode);
       setSelectedRelease(release);
       setCurrentRelease(release);
@@ -149,12 +138,20 @@ export default function ReleasesPage() {
 
   const handleModalSave = async (data: any) => {
     try {
-      await createRelease(data);
+      if (modalMode === "edit" && selectedRelease?.id) {
+        await updateRelease(selectedRelease.id, data);
+        toast.success("Lançamento atualizado com sucesso!");
+      } else {
+        await createRelease(data);
+        toast.success("Lançamento criado com sucesso!");
+      }
+
       setIsModalOpen(false);
       setSelectedRelease(null);
       loadReleases();
     } catch (error) {
       logError("Error saving release", error);
+      throw error;
     }
   };
 
@@ -184,98 +181,56 @@ export default function ReleasesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
-        {/* Header Responsivo */}
+    <div className="w-full">
+      <div className="max-w-7xl mx-auto space-y-4">
+        {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Lançamentos
-            </h1>
-            <p className="text-sm md:text-base text-gray-600 mt-1">
-              Gerencie seus lançamentos de notas fiscais
-            </p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Lançamentos</h1>
+            <p className="text-sm md:text-base text-gray-600 mt-1">Gerencie seus lançamentos de notas fiscais</p>
           </div>
-
-          <div className="flex gap-2">
-            <Button
-              onClick={handleRefresh}
-              variant="outline"
-              disabled={isRefreshing}
-              className="flex-1 sm:flex-initial"
-            >
-              <RefreshCw
-                className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
-              />
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing} className="flex-1 sm:flex-initial">
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Atualizar</span>
             </Button>
             {canCreate && (
-              <Button
-                onClick={handleCreate}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white flex-1 sm:flex-initial"
-              >
+              <Button onClick={handleCreate} className="bg-indigo-600 hover:bg-indigo-700 text-white flex-1 sm:flex-initial">
                 <Plus className="w-4 h-4 mr-2" />
                 Novo
               </Button>
             )}
           </div>
         </div>
+
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
               <div>
                 <CardTitle>Lista de Lançamentos</CardTitle>
-                <CardDescription className="text-xs sm:text-sm">
-                  {filteredReleases.length} de {releases.length} lançamentos
-                </CardDescription>
+                <CardDescription className="text-xs sm:text-sm">{filteredReleases.length} de {releases.length} lançamentos</CardDescription>
               </div>
-
-              {/* Busca */}
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar por número, valor..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 pr-9"
-                />
+                <Input placeholder="Buscar por número, valor..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 pr-9" />
                 {searchTerm && (
-                  <button
-                    onClick={clearSearch}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
+                  <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                     <X className="h-4 w-4" />
                   </button>
                 )}
               </div>
             </div>
           </CardHeader>
-
           <CardContent>
             {isLoading ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-4">
-                    <Skeleton className="h-12 w-full" />
-                  </div>
-                ))}
-              </div>
+              <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="flex items-center gap-4"><Skeleton className="h-12 w-full" /></div>)}</div>
             ) : filteredReleases.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-500">
-                  {searchTerm
-                    ? "Nenhum lançamento encontrado com esse filtro"
-                    : "Nenhum lançamento cadastrado"}
-                </p>
-                {searchTerm && (
-                  <Button variant="link" onClick={clearSearch} className="mt-2">
-                    Limpar filtro
-                  </Button>
-                )}
+                <p className="text-gray-500">{searchTerm ? "Nenhum lançamento encontrado com esse filtro" : "Nenhum lançamento cadastrado"}</p>
+                {searchTerm && <Button variant="link" onClick={clearSearch} className="mt-2">Limpar filtro</Button>}
               </div>
             ) : (
               <>
-                {/* VERSÃO DESKTOP - Tabela */}
                 <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -290,91 +245,32 @@ export default function ReleasesPage() {
                     <TableBody>
                       {filteredReleases.map((release) => (
                         <TableRow key={release.id}>
-                          <TableCell className="font-medium">
-                            {release.notaFiscal?.numero ||
-                              release.notaFiscalId ||
-                              "-"}
-                          </TableCell>
-                          <TableCell>
-                            {release.notaFiscal?.valor
-                              ? formatCurrency(release.notaFiscal.valor)
-                              : "-"}
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            {release.latitude?.toFixed(4)},{" "}
-                            {release.longitude?.toFixed(4)}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(
-                              release.data_lancamento,
-                            ).toLocaleDateString("pt-BR")}
-                          </TableCell>
+                          <TableCell className="font-medium">{release.notaFiscal?.numero || release.notaFiscalId || "-"}</TableCell>
+                          <TableCell>{release.notaFiscal?.valor ? formatCurrency(release.notaFiscal.valor) : "-"}</TableCell>
+                          <TableCell className="text-xs">{release.latitude?.toFixed(4)}, {release.longitude?.toFixed(4)}</TableCell>
+                          <TableCell>{new Date(release.data_lancamento).toLocaleDateString("pt-BR")}</TableCell>
                           <TableCell className="text-right">
-                            <ReleaseActions
-                              release={release}
-                              canEdit={canEdit}
-                              canDelete={canDelete}
-                              onView={handleView}
-                              onEdit={handleEdit}
-                              onDelete={handleDeleteClick}
-                            />
+                            <ReleaseActions release={release} canEdit={canEdit} canDelete={canDelete} onView={handleView} onEdit={handleEdit} onDelete={handleDeleteClick} />
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
-
-                {/* VERSÃO MOBILE - Cards */}
                 <div className="md:hidden space-y-3">
                   {filteredReleases.map((release) => (
                     <Card key={release.id} className="overflow-hidden">
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-600">
-                              Nota Fiscal
-                            </p>
-                            <p className="text-lg font-bold text-gray-900">
-                              {release.notaFiscal?.numero ||
-                                release.notaFiscalId ||
-                                "-"}
-                            </p>
+                            <p className="text-sm font-medium text-gray-600">Nota Fiscal</p>
+                            <p className="text-lg font-bold text-gray-900">{release.notaFiscal?.numero || release.notaFiscalId || "-"}</p>
                           </div>
-                          <ReleaseActions
-                            release={release}
-                            canEdit={canEdit}
-                            canDelete={canDelete}
-                            onView={handleView}
-                            onEdit={handleEdit}
-                            onDelete={handleDeleteClick}
-                          />
+                          <ReleaseActions release={release} canEdit={canEdit} canDelete={canDelete} onView={handleView} onEdit={handleEdit} onDelete={handleDeleteClick} />
                         </div>
-
                         <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div>
-                            <p className="text-gray-600">Valor</p>
-                            <p className="font-semibold text-green-600">
-                              {release.notaFiscal?.valor
-                                ? formatCurrency(release.notaFiscal.valor)
-                                : "-"}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600">Data</p>
-                            <p className="font-medium">
-                              {new Date(
-                                release.data_lancamento,
-                              ).toLocaleDateString("pt-BR")}
-                            </p>
-                          </div>
-                          <div className="col-span-2">
-                            <p className="text-gray-600">Localização</p>
-                            <p className="font-mono text-xs text-gray-700">
-                              {release.latitude?.toFixed(4)},{" "}
-                              {release.longitude?.toFixed(4)}
-                            </p>
-                          </div>
+                          <div><p className="text-gray-600">Valor</p><p className="font-semibold text-green-600">{release.notaFiscal?.valor ? formatCurrency(release.notaFiscal.valor) : "-"}</p></div>
+                          <div><p className="text-gray-600">Data</p><p className="font-medium">{new Date(release.data_lancamento).toLocaleDateString("pt-BR")}</p></div>
                         </div>
                       </CardContent>
                     </Card>
@@ -422,3 +318,4 @@ export default function ReleasesPage() {
     </div>
   );
 }
+

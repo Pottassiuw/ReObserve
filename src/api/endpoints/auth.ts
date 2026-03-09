@@ -11,6 +11,20 @@ export type UserPayload = {
   senha: string;
 };
 
+export interface EnterpriseLookupData {
+  cnpj: string;
+  nomeFantasia: string | null;
+  razaoSocial: string;
+  naturezaJuridica: string;
+  endereco: string;
+  CNAES: string;
+  situacaoCadastral: string;
+  telefone: string | null;
+  email: string | null;
+  responsavel: string | null;
+  dataAbertura: string | null;
+}
+
 export const loginApi = async (
   type: "user" | "enterprise",
   credentials: { email?: string; cnpj?: string; senha: string },
@@ -38,5 +52,26 @@ export const logoutApi = async (type: "user" | "enterprise") => {
   } catch (error: any) {
     logError("Logout error", error.response?.data || error.message);
     throw new Error("Falha no logout.");
+  }
+};
+
+export const lookupEnterpriseByCNPJ = async (
+  cnpj: string,
+): Promise<EnterpriseLookupData> => {
+  try {
+    const cleanCNPJ = cnpj.replace(/\D/g, "");
+    const { data } = await Client.get(`/enterprises/cnpj/${cleanCNPJ}`);
+
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Não foi possível buscar dados do CNPJ");
+    }
+
+    return data.data;
+  } catch (error: any) {
+    logError("CNPJ lookup error", error.response?.data || error.message);
+    throw new Error(
+      error?.response?.data?.message ||
+        "Não foi possível buscar os dados do CNPJ no momento.",
+    );
   }
 };

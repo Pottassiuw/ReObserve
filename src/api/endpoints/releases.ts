@@ -9,6 +9,7 @@ export interface CriarLancamentoBackendPayload {
     valor: number;
     dataEmissao: string;
     xmlPath?: string;
+    xmlContent?: string;
   };
   data_lancamento: string;
   latitude: number;
@@ -62,6 +63,9 @@ export const atualizarLancamento = async (
       if (data.xmlPath !== undefined) {
         payload.notaFiscal.xmlPath = data.xmlPath;
       }
+      if (data.xmlContent !== undefined) {
+        payload.notaFiscal.xmlContent = data.xmlContent;
+      }
       if (data.numeroNotaFiscal) {
         payload.notaFiscal.numero = data.numeroNotaFiscal;
       }
@@ -111,16 +115,6 @@ export const deletarLancamento = async (
 ): Promise<void> => {
   await Client.delete(`/releases/enterprise/${enterpriseId}/release/${id}`);
 };
-export const uploadXML = async (
-  file: File,
-): Promise<{ xml: string; data: Partial<Lancamento> }> => {
-  const formData = new FormData();
-  formData.append("xml", file);
-  const response = await Client.post("/releases/upload-xml", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return response.data?.data || response.data;
-};
 export const criarLancamento = async (
   data: CriarLancamentoDTO,
 ): Promise<Lancamento> => {
@@ -141,6 +135,7 @@ export const criarLancamento = async (
       valor: data.valor,
       dataEmissao: data.dataEmissao.toISOString(),
       xmlPath: data.xmlPath,
+      xmlContent: data.xmlContent,
     },
     data_lancamento: data.data_lancamento.toISOString(),
     latitude: data.latitude,

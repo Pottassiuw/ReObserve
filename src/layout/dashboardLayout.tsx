@@ -10,13 +10,12 @@ import { useEffect } from "react";
 
 function DashboardContent() {
   const { open, setOpen, isMobile } = useSidebar();
+
   useEffect(() => {
     if (!isMobile) return;
-
     const handleClickOutside = (e: MouseEvent) => {
       const sidebar = document.querySelector('[data-sidebar="sidebar"]');
       const trigger = document.querySelector("[data-sidebar-trigger]");
-
       if (
         open &&
         sidebar &&
@@ -27,12 +26,10 @@ function DashboardContent() {
         setOpen(false);
       }
     };
-
     if (open) {
       document.addEventListener("mousedown", handleClickOutside);
       document.addEventListener("touchstart", handleClickOutside as any);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside as any);
@@ -48,10 +45,8 @@ function DashboardContent() {
         />
       )}
 
-      <div className="relative flex min-h-screen w-full">
-        <div
-          className={`${isMobile ? "fixed inset-y-0 left-0 z-50" : "shrink-0"}`}
-        >
+      <div className="relative flex min-h-screen w-full bg-slate-50">
+        <div className={`${isMobile ? "fixed inset-y-0 left-0 z-50" : "shrink-0"}`}>
           <AppSidebar />
         </div>
 
@@ -67,7 +62,7 @@ function DashboardContent() {
             </div>
           )}
 
-          <main className="flex-1 overflow-auto bg-slate-50 p-5">
+          <main className={`flex-1 overflow-auto bg-slate-50 ${isMobile ? "p-3 pt-20" : "p-5"}`}>
             <Outlet />
           </main>
         </div>

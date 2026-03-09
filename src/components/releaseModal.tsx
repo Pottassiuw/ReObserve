@@ -15,22 +15,21 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Camera, Upload, Trash2, ImageIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Lancamento, CriarLancamentoDTO } from "@/types/index";
-import { uploadImagens, diagnosticarSupabase } from "@/utils/supabase-sdk";
+import { uploadImagens, uploadXmlFile } from "@/utils/supabase-sdk";
 import {
   formatCurrencyInput,
   parseCurrencyBR,
   formatNumberBR,
 } from "@/utils/formatters";
-import { useAuthStore } from "@/stores/authStore";
-import { GPS_CONSTANTS } from "@/constants";
-import { logError, logInfo } from "@/utils/logger";
+import { logError } from "@/utils/logger";
+import { parseNFeXmlFile } from "@/utils/xmlParser";
 
 interface ReleaseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   release: Lancamento | null;
   mode: "view" | "edit" | "create";
-  onSave: (data: CriarLancamentoDTO) => void;
+  onSave: (data: CriarLancamentoDTO) => Promise<void> | void;
   usuarioId: number;
   empresaId: number;
 }
@@ -75,6 +74,9 @@ const ReleaseModal = ({
 
   const [images, setImages] = useState<(File | string)[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [xmlFile, setXmlFile] = useState<File | null>(null);
+  const [xmlFileName, setXmlFileName] = useState("");
+  const [xmlContent, setXmlContent] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -95,6 +97,9 @@ const ReleaseModal = ({
           : "",
         xmlPath: release.notaFiscal?.xmlPath || "",
       });
+      setXmlFile(null);
+      setXmlFileName(release.notaFiscal?.xmlPath ? "XML salvo" : "");
+      setXmlContent(release.notaFiscal?.xmlContent || "");
 
       if (release.imagens && release.imagens.length > 0) {
         const urls = release.imagens.map((img) => img.url);
@@ -121,6 +126,9 @@ const ReleaseModal = ({
       dataEmissao: "",
       xmlPath: "",
     });
+    setXmlFile(null);
+    setXmlFileName("");
+    setXmlContent("");
     setImages([]);
     setPreviews([]);
     setErrors({});
@@ -193,20 +201,35 @@ const ReleaseModal = ({
     event.target.value = "";
   };
 
-  const handleXmlUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleXmlUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
+    try {
+      const parsedXml = await parseNFeXmlFile(file);
+
+      setXmlFile(file);
+      setXmlFileName(file.name);
+      setXmlContent(parsedXml.rawContent);
       setFormData((prev) => ({
         ...prev,
-        xmlPath: e.target?.result as string,
+        numeroNotaFiscal: parsedXml.numero,
+        valor:
+          parsedXml.valor !== null ? formatNumberBR(parsedXml.valor) : prev.valor,
+        dataEmissao: parsedXml.dataEmissao.split("T")[0],
       }));
-      toast.success("XML carregado!");
-    };
-    reader.readAsText(file);
-    event.target.value = "";
+
+      toast.success("XML processado com sucesso!");
+    } catch (error: any) {
+      logError("Erro ao processar XML", error);
+      toast.error(error?.message || "Não foi possível processar o XML.");
+      setXmlFile(null);
+      setXmlFileName("");
+    } finally {
+      event.target.value = "";
+    }
   };
 
   const removeImage = (index: number) => {
@@ -225,34 +248,60 @@ const ReleaseModal = ({
       validationSchema.parse({ ...formData, imagens: images });
 
       setIsUploading(true);
-      const toastId = toast.loading("Fazendo upload das imagens...");
-
-      const { userType: currentUserType, userId: currentUserId } =
-        useAuthStore.getState();
-      if (currentUserType === "enterprise") {
-        logInfo("Running diagnostics for enterprise before upload");
-        await diagnosticarSupabase();
-      }
+      const toastId = toast.loading("Enviando arquivos...");
 
       try {
-        logInfo("Starting image upload", {
-          count: images.length,
-          userType: currentUserType,
-          userId: currentUserId,
-        });
         const imageUrls = await uploadImagens(images);
+
+        let uploadedXmlPath = formData.xmlPath || undefined;
+
+        if (xmlFile) {
+          try {
+            uploadedXmlPath = await uploadXmlFile(xmlFile);
+          } catch (xmlUploadError: any) {
+            logError("Erro ao enviar XML para o storage", xmlUploadError);
+            toast.info(
+              xmlUploadError?.message ||
+                "O XML foi salvo no sistema, mas não no bucket de storage atual.",
+            );
+          }
+        }
+
         toast.success("Upload concluído!", { id: toastId });
 
-        const latitude =
-          GPS_CONSTANTS.DEFAULT_LATITUDE + (Math.random() - 0.5) * 0.01;
-        const longitude =
-          GPS_CONSTANTS.DEFAULT_LONGITUDE + (Math.random() - 0.5) * 0.01;
+        let latitude: number | null = null;
+        let longitude: number | null = null;
+
+        if (!navigator.geolocation) {
+          toast.warning("Geolocalização não é suportada neste dispositivo.");
+        } else {
+          try {
+            const position = await new Promise<GeolocationPosition>(
+              (resolve, reject) =>
+                navigator.geolocation.getCurrentPosition(resolve, reject)
+            );
+            latitude = position.coords.latitude;
+            longitude = position.coords.longitude;
+          } catch (geoError: any) {
+            logError("Erro ao obter localização", geoError);
+            if (geoError?.code === 1) {
+              toast.warning(
+                "Permissão de localização negada. O lançamento será salvo sem coordenadas."
+              );
+            } else {
+              toast.warning(
+                "Não foi possível obter a localização. O lançamento será salvo sem coordenadas."
+              );
+            }
+          }
+        }
 
         const data: CriarLancamentoDTO = {
           numeroNotaFiscal: formData.numeroNotaFiscal,
           valor: parseCurrencyBR(formData.valor),
           dataEmissao: new Date(formData.dataEmissao),
-          xmlPath: formData.xmlPath || undefined,
+          xmlPath: uploadedXmlPath,
+          xmlContent: xmlContent || undefined,
           latitude,
           longitude,
           data_lancamento: new Date(),
@@ -261,7 +310,7 @@ const ReleaseModal = ({
           empresaId,
         };
 
-        onSave(data);
+        await Promise.resolve(onSave(data));
         resetForm();
         onOpenChange(false);
       } catch (uploadError: any) {
@@ -298,7 +347,7 @@ const ReleaseModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto px-4 py-5 sm:px-6">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-indigo-600">
             {getTitle()}
@@ -367,10 +416,10 @@ const ReleaseModal = ({
           {!isViewMode && (
             <div className="space-y-2">
               <Label htmlFor="xml">XML da Nota Fiscal (Opcional)</Label>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
                   id="xml"
-                  value={formData.xmlPath ? "Arquivo XML carregado ✓" : ""}
+                  value={xmlFileName || (formData.xmlPath ? "XML salvo" : "")}
                   placeholder="Faça upload do arquivo XML"
                   readOnly
                   className="flex-1 cursor-pointer"
@@ -407,7 +456,7 @@ const ReleaseModal = ({
             {/* Botões de Ação - apenas em modo de edição/criação */}
             {!isViewMode && (
               <>
-                <div className="flex gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -455,7 +504,7 @@ const ReleaseModal = ({
                       ref={videoRef}
                       autoPlay
                       playsInline
-                      className="w-full h-80 object-cover rounded-lg bg-black"
+                      className="h-64 w-full rounded-lg bg-black object-cover sm:h-80"
                     />
                     <Button
                       onClick={capturePhoto}
@@ -472,7 +521,7 @@ const ReleaseModal = ({
 
             {/* Grid de Imagens */}
             {previews.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {previews.map((preview, index) => (
                   <Card key={index} className="relative group overflow-hidden">
                     <CardContent className="p-0">
@@ -506,7 +555,7 @@ const ReleaseModal = ({
             {/* Estado Vazio */}
             {previews.length === 0 && !isCameraActive && (
               <Card className="border-2 border-dashed border-gray-300">
-                <CardContent className="p-12 text-center">
+                <CardContent className="p-6 text-center sm:p-12">
                   <ImageIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 mb-2 font-medium">
                     Nenhuma imagem adicionada
@@ -524,7 +573,7 @@ const ReleaseModal = ({
         </div>
 
         {/* Botões de Ação */}
-        <div className="flex gap-3 justify-end pt-6 border-t">
+        <div className="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:justify-end">
           <Button
             variant="outline"
             onClick={() => {
@@ -538,7 +587,7 @@ const ReleaseModal = ({
           {!isViewMode && (
             <Button
               onClick={handleSave}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-32"
+              className="min-w-32 bg-indigo-600 text-white hover:bg-indigo-700 sm:w-auto"
               disabled={isUploading}
             >
               {isUploading ? (

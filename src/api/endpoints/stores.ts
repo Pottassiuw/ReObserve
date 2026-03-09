@@ -7,10 +7,13 @@ export const retornarEmpresa = async (id: number): Promise<Enterprise> => {
       throw new Error("ID é obrigatório");
     }
     const response = await Client.get(`/enterprises/${id}`);
-    if (!response || !response.data) {
-      throw new Error("Nenhum dado recebido");
+    const empresa = response.data?.data;
+
+    if (!response.data?.success || !empresa) {
+      throw new Error(response.data?.message || "Nenhum dado recebido");
     }
-    return response.data.enterprise || response.data.empresa;
+
+    return empresa;
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message || `Erro ao buscar empresa: ${error.message}`,
@@ -40,7 +43,7 @@ export const atualizarEmpresa = async (
         response.data?.error || "Erro ao atualizar empresa",
       );
     }
-    return response.data.enterprise;
+    return response.data.data;
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message || `Erro ao atualizar empresa: ${error.message}`,

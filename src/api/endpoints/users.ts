@@ -6,26 +6,35 @@ export const retornarUsuario = async (id: number): Promise<User> => {
     if (!id) {
       throw new Error("ID do usuário não fornecido");
     }
+
     const response = await Client.get(`/users/${id}`);
-    if (!response.data || !response.data.usuario) {
-      throw new Error("Usuário não encontrado");
+    const usuario = response.data?.data;
+
+    if (!response.data?.success || !usuario) {
+      throw new Error(response.data?.message || "Usuário não encontrado");
     }
-    return response.data.usuario;
+
+    return usuario;
   } catch (error: any) {
-    throw new Error(`Erro ao buscar usuário: ${error.message}`);
+    throw new Error(
+      error?.response?.data?.message || `Erro ao buscar usuário: ${error.message}`,
+    );
   }
 };
 export const retornarUsuarios = async (empresaId: number): Promise<User[]> => {
   try {
     const response = await Client.get(`/enterprises/${empresaId}/users/`);
-    if (!response || !response.data) {
-      throw new Error("Empresa não existe");
-    }
-    const usuarios = response.data.users || response.data;
+    const usuarios = response.data?.data;
 
-    return Array.isArray(usuarios) ? usuarios : [];
-  } catch (error) {
-    throw new Error(`Failed to fetch users: ${error}`);
+    if (!response.data?.success || !Array.isArray(usuarios)) {
+      throw new Error(response.data?.message || "Empresa não existe");
+    }
+
+    return usuarios;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message || `Failed to fetch users: ${error.message}`,
+    );
   }
 };
 export const deletarUsuario = async (id: number): Promise<void> => {
@@ -100,7 +109,7 @@ export const atualizarUsuario = async (
         response.data?.error || "Erro ao atualizar usuário",
       );
     }
-    return response.data.usuario;
+    return response.data.data;
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message || `Erro ao atualizar usuário: ${error.message}`,

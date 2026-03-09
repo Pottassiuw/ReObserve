@@ -17,7 +17,3 @@ export const BASIC_PERMISSIONS = [
   Permissoes.verLancamentos,
 ];
 
-export const GPS_CONSTANTS = {
-  DEFAULT_LATITUDE: -23.5505,
-  DEFAULT_LONGITUDE: -46.6333,
-};
