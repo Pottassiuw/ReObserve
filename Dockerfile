@@ -13,13 +13,10 @@ COPY . .
 
 RUN pnpm build
 
-# Production stage
 FROM nginx:alpine
 
-# Copy nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Copy built files from builder
 COPY --from=builder /build/dist /usr/share/nginx/html
 
 EXPOSE 80
