@@ -278,15 +278,30 @@ const ReleaseModal = ({
           try {
             const position = await new Promise<GeolocationPosition>(
               (resolve, reject) =>
-                navigator.geolocation.getCurrentPosition(resolve, reject)
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                  enableHighAccuracy: true,
+                  timeout: 10000,
+                  maximumAge: 0,
+                })
             );
             latitude = position.coords.latitude;
             longitude = position.coords.longitude;
           } catch (geoError: any) {
             logError("Erro ao obter localização", geoError);
             if (geoError?.code === 1) {
+              // PERMISSION_DENIED
               toast.warning(
                 "Permissão de localização negada. O lançamento será salvo sem coordenadas."
+              );
+            } else if (geoError?.code === 2) {
+              // POSITION_UNAVAILABLE
+              toast.warning(
+                "Localização indisponível no momento. O lançamento será salvo sem coordenadas."
+              );
+            } else if (geoError?.code === 3) {
+              // TIMEOUT
+              toast.warning(
+                "Tempo esgotado ao obter localização. O lançamento será salvo sem coordenadas."
               );
             } else {
               toast.warning(
