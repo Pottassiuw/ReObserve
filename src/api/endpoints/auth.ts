@@ -47,7 +47,7 @@ export const loginApi = async (
 export const logoutApi = async (type: "user" | "enterprise") => {
   const endpoint = type === "user" ? "users" : "enterprises";
   try {
-    await Client.post(`${endpoint}/auth/logout`);
+    await Client.post(`/${endpoint}/auth/logout`);
     clearGlobalAuthToken();
   } catch (error: any) {
     logError("Logout error", error.response?.data || error.message);
@@ -60,12 +60,12 @@ export const lookupEnterpriseByCNPJ = async (
 ): Promise<EnterpriseLookupData> => {
   try {
     const cleanCNPJ = cnpj.replace(/\D/g, "");
+    console.log(cleanCNPJ);
     const { data } = await Client.get(`/enterprises/cnpj/${cleanCNPJ}`);
 
     if (!data?.success || !data?.data) {
       throw new Error(data?.message || "Não foi possível buscar dados do CNPJ");
     }
-
     return data.data;
   } catch (error: any) {
     logError("CNPJ lookup error", error.response?.data || error.message);
