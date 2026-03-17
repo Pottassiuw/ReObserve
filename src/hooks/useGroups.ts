@@ -3,12 +3,10 @@ import { deletarGrupo, listarGrupos, criarGrupo } from "@/api/endpoints/groups";
 import type { Grupo } from "@/types";
 import { toast } from "sonner";
 import { logError } from "@/utils/logger";
-
 interface UseGroupsProps {
   empresaId?: number;
   autoLoad?: boolean;
 }
-
 interface UseGroupsReturn {
   grupos: Grupo[];
   isLoading: boolean;

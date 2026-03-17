@@ -53,7 +53,7 @@ export default function AppSidebarRedesigned() {
     permissionsLoaded,
     permissions,
   } = usePermissionsStore();
-  const { navigateToLogin } = useAppNavigator();
+  const { navigateToHome } = useAppNavigator();
   const { user } = useUserStore();
   const { enterprise } = useEnterpriseStore();
 
@@ -145,11 +145,11 @@ export default function AppSidebarRedesigned() {
   const handleLogout = useCallback(async () => {
     try {
       await logout(userType === "enterprise" ? "enterprise" : "user");
-      navigateToLogin();
+      navigateToHome();
     } catch (error) {
       logError("Erro no logout", error);
     }
-  }, [logout, userType, navigateToLogin]);
+  }, [logout, userType, navigateToHome]);
 
   const currentUser = useMemo(
     () => (Array.isArray(user) ? user[0] : user),
@@ -195,12 +195,12 @@ export default function AppSidebarRedesigned() {
         <item.icon
           className={cn(
             "w-5 h-5 flex-shrink-0",
-            isActive ? "text-indigo-600" : "text-slate-500 group-hover:text-indigo-600",
+            isActive
+              ? "text-indigo-600"
+              : "text-slate-500 group-hover:text-indigo-600",
           )}
         />
-        {!isCollapsed && (
-          <span className="ml-3 text-sm">{item.label}</span>
-        )}
+        {!isCollapsed && <span className="ml-3 text-sm">{item.label}</span>}
       </SidebarMenuButton>
     );
 
@@ -228,14 +228,21 @@ export default function AppSidebarRedesigned() {
             isCollapsed ? "px-3 py-4" : "px-4 py-4",
           )}
         >
-          <div className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
+          <div
+            className={cn(
+              "flex items-center",
+              isCollapsed ? "justify-center" : "gap-3",
+            )}
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
               <span className="text-white text-sm font-bold">R</span>
             </div>
             {!isCollapsed && (
               <div className="flex flex-col">
                 <span className="font-semibold text-slate-900">ReObserve</span>
-                <span className="text-xs text-slate-500">Sistema de Gestão</span>
+                <span className="text-xs text-slate-500">
+                  Sistema de Gestão
+                </span>
               </div>
             )}
           </div>
@@ -307,7 +314,12 @@ export default function AppSidebarRedesigned() {
           </div>
         </SidebarContent>
 
-        <SidebarFooter className={cn("border-t border-slate-200", isCollapsed ? "p-3" : "p-4")}>
+        <SidebarFooter
+          className={cn(
+            "border-t border-slate-200",
+            isCollapsed ? "p-3" : "p-4",
+          )}
+        >
           <div className="space-y-3">
             {!isCollapsed ? (
               <div className="flex items-center gap-3 p-2">
@@ -324,12 +336,17 @@ export default function AppSidebarRedesigned() {
                       {userType === "enterprise" ? "Empresa" : "Usuário"}
                     </span>
                     {isAdminUser && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-indigo-100 text-indigo-700">
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] px-1.5 py-0 bg-indigo-100 text-indigo-700"
+                      >
                         Admin
                       </Badge>
                     )}
                   </div>
-                  <span className="text-xs text-slate-500 truncate">{userDisplayName}</span>
+                  <span className="text-xs text-slate-500 truncate">
+                    {userDisplayName}
+                  </span>
                 </div>
               </div>
             ) : (
@@ -347,9 +364,15 @@ export default function AppSidebarRedesigned() {
                 </TooltipTrigger>
                 <TooltipContent side="right">
                   <div>
-                    <div className="font-medium">{userType === "enterprise" ? "Empresa" : "Usuário"}</div>
-                    <div className="text-xs text-slate-500">{userDisplayName}</div>
-                    {isAdminUser && <div className="text-xs text-indigo-600">Admin</div>}
+                    <div className="font-medium">
+                      {userType === "enterprise" ? "Empresa" : "Usuário"}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {userDisplayName}
+                    </div>
+                    {isAdminUser && (
+                      <div className="text-xs text-indigo-600">Admin</div>
+                    )}
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -361,14 +384,18 @@ export default function AppSidebarRedesigned() {
                   onClick={handleLogout}
                   className={cn(
                     "flex items-center gap-3 rounded-lg text-sm text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors",
-                    isCollapsed ? "w-8 h-8 justify-center mx-auto" : "w-full px-2 py-2",
+                    isCollapsed
+                      ? "w-8 h-8 justify-center mx-auto"
+                      : "w-full px-2 py-2",
                   )}
                 >
                   <LogOut className="h-4 w-4" />
                   {!isCollapsed && <span>Sair</span>}
                 </button>
               </TooltipTrigger>
-              {isCollapsed && <TooltipContent side="right">Sair</TooltipContent>}
+              {isCollapsed && (
+                <TooltipContent side="right">Sair</TooltipContent>
+              )}
             </Tooltip>
           </div>
         </SidebarFooter>

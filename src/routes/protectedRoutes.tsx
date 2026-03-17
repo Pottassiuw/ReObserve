@@ -62,13 +62,11 @@ export default function ProtectedRoute({
     toast.error("Acesso negado! Esta página é exclusiva para empresas.");
     return <Navigate to="/dashboard" replace />;
   }
-
   // Verifica se requer admin
   if (requireAdmin && !isAdmin()) {
     toast.error("Acesso negado! Você não tem permissão de administrador.");
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/releases" replace />;
   }
-
   // Verifica permissão personalizada
   if (requirePermission && !requirePermission()) {
     toast.error("Acesso negado! Você não tem permissão para acessar esta página.");

@@ -27,7 +27,7 @@ const createProtectedRoute = (
     requirePermission?: () => boolean;
     requireEnterprise?: boolean;
     requireAdmin?: boolean;
-  }
+  },
 ) => {
   return (
     <ProtectedRoute
@@ -60,80 +60,80 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         children: [
-          { 
-            index: true, 
+          {
+            index: true,
             element: createProtectedRoute(<Dashboard />, {
               requirePermission: () => {
                 const { userType } = useAuthStore.getState();
                 const { isAdmin } = usePermissionsStore.getState();
                 return userType === "enterprise" || isAdmin();
-              }
-            })
+              },
+            }),
           },
-          { 
-            path: "dashboard", 
+          {
+            path: "dashboard",
             element: createProtectedRoute(<Dashboard />, {
               requirePermission: () => {
                 const { userType } = useAuthStore.getState();
                 const { isAdmin } = usePermissionsStore.getState();
                 return userType === "enterprise" || isAdmin();
-              }
-            })
+              },
+            }),
           },
-          { 
-            path: "releases", 
+          {
+            path: "releases",
             element: createProtectedRoute(<ReleasesPage />, {
               requirePermission: () => {
                 const { canViewRelease } = usePermissionsStore.getState();
                 return canViewRelease();
-              }
-            })
+              },
+            }),
           },
-          { 
-            path: "periods", 
+          {
+            path: "periods",
             element: createProtectedRoute(<PeriodsPage />, {
               requirePermission: () => {
                 const { canViewPeriod } = usePermissionsStore.getState();
                 return canViewPeriod();
-              }
-            })
+              },
+            }),
           },
-          { 
-            path: "user/settings", 
+          {
+            path: "user/settings",
             element: createProtectedRoute(<UserSettingsPage />, {
               requirePermission: () => {
                 const { userType } = useAuthStore.getState();
                 return userType === "user";
-              }
-            })
+              },
+            }),
           },
-          { 
-            path: "enterprise/settings", 
+          {
+            path: "enterprise/settings",
             element: createProtectedRoute(<EnterpriseSettingsPage />, {
-              requireEnterprise: true
-            })
+              requireEnterprise: true,
+            }),
           },
-          { 
-            path: "user/create", 
+          {
+            path: "user/create",
             element: createProtectedRoute(<CreateUserPage />, {
-              requireEnterprise: true
-            })
+              requireEnterprise: true,
+            }),
           },
-          { 
-            path: "users/view", 
+          {
+            path: "users/view",
             element: createProtectedRoute(<UserView />, {
               requirePermission: () => {
                 const { userType } = useAuthStore.getState();
                 const { isAdmin } = usePermissionsStore.getState();
                 return userType === "enterprise" || isAdmin();
-              }
-            })
+              },
+            }),
           },
-          { 
-            path: "groups", 
+          {
+            path: "groups",
             element: createProtectedRoute(<EnterpriseGroups />, {
-              requireEnterprise: true
-            })
+              requireEnterprise: true,
+            }),
           },
         ],
       },
